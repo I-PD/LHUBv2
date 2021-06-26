@@ -88,6 +88,8 @@ namespace ISC_Win_WinForm_GUI
             this.textBox_ScanAvg = new System.Windows.Forms.TextBox();
             this.label34 = new System.Windows.Forms.Label();
             this.GroupBox_LampControl = new System.Windows.Forms.GroupBox();
+            this.TextBox_WarmUpTime = new System.Windows.Forms.TextBox();
+            this.RadioButton_WarmUp = new System.Windows.Forms.RadioButton();
             this.CheckBox_LampOn = new System.Windows.Forms.CheckBox();
             this.TextBox_LampStableTime = new System.Windows.Forms.TextBox();
             this.RadioButton_LampStableTime = new System.Windows.Forms.RadioButton();
@@ -234,6 +236,10 @@ namespace ISC_Win_WinForm_GUI
             this.TextBox_SavedFileDirPath = new System.Windows.Forms.TextBox();
             this.label79 = new System.Windows.Forms.Label();
             this.tabPage_Utility = new System.Windows.Forms.TabPage();
+            this.GroupBox_LogFile = new System.Windows.Forms.GroupBox();
+            this.Button_DisableLog = new System.Windows.Forms.Button();
+            this.Button_EnableLog = new System.Windows.Forms.Button();
+            this.Label_LogStatus = new System.Windows.Forms.Label();
             this.GroupBox_BleName = new System.Windows.Forms.GroupBox();
             this.Button_Get_BLE_Display_Name = new System.Windows.Forms.Button();
             this.Button_Set_BLE_Display_Name = new System.Windows.Forms.Button();
@@ -343,7 +349,7 @@ namespace ISC_Win_WinForm_GUI
             this.ProgressBar_TivaFWUpdateStatus = new System.Windows.Forms.ProgressBar();
             this.Button_TivaFWBrowse = new System.Windows.Forms.Button();
             this.TextBox_TivaFWPath = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
+            this.Label_TivaFWName = new System.Windows.Forms.Label();
             this.GroupBox_SerialNumber = new System.Windows.Forms.GroupBox();
             this.Button_SerialNumberGet = new System.Windows.Forms.Button();
             this.Button_SerialNumberSet = new System.Windows.Forms.Button();
@@ -384,6 +390,7 @@ namespace ISC_Win_WinForm_GUI
             this.panel_Saved_Scan.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView_savescan)).BeginInit();
             this.tabPage_Utility.SuspendLayout();
+            this.GroupBox_LogFile.SuspendLayout();
             this.GroupBox_BleName.SuspendLayout();
             this.groupBox_Device.SuspendLayout();
             this.groupBox_ActivationKey.SuspendLayout();
@@ -672,7 +679,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_ContScan.Controls.Add(this.Text_ContScan);
             this.GroupBox_ContScan.Location = new System.Drawing.Point(3, 284);
             this.GroupBox_ContScan.Name = "GroupBox_ContScan";
-            this.GroupBox_ContScan.Size = new System.Drawing.Size(381, 83);
+            this.GroupBox_ContScan.Size = new System.Drawing.Size(384, 83);
             this.GroupBox_ContScan.TabIndex = 5;
             this.GroupBox_ContScan.TabStop = false;
             this.GroupBox_ContScan.Text = "Continuous Scan Select";
@@ -703,7 +710,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.label3.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(203, 26);
+            this.label3.Location = new System.Drawing.Point(206, 26);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(86, 14);
             this.label3.TabIndex = 12;
@@ -722,7 +729,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.label2.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(17, 26);
+            this.label2.Location = new System.Drawing.Point(20, 26);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(65, 14);
             this.label2.TabIndex = 10;
@@ -747,7 +754,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_GainControl.Controls.Add(this.label1);
             this.GroupBox_GainControl.Location = new System.Drawing.Point(3, 161);
             this.GroupBox_GainControl.Name = "GroupBox_GainControl";
-            this.GroupBox_GainControl.Size = new System.Drawing.Size(381, 55);
+            this.GroupBox_GainControl.Size = new System.Drawing.Size(384, 55);
             this.GroupBox_GainControl.TabIndex = 3;
             this.GroupBox_GainControl.TabStop = false;
             this.GroupBox_GainControl.Text = "GainControl";
@@ -815,7 +822,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_SaveScan.Controls.Add(this.CheckBox_SaveCombCSV);
             this.GroupBox_SaveScan.Location = new System.Drawing.Point(3, 373);
             this.GroupBox_SaveScan.Name = "GroupBox_SaveScan";
-            this.GroupBox_SaveScan.Size = new System.Drawing.Size(381, 147);
+            this.GroupBox_SaveScan.Size = new System.Drawing.Size(384, 147);
             this.GroupBox_SaveScan.TabIndex = 6;
             this.GroupBox_SaveScan.TabStop = false;
             this.GroupBox_SaveScan.Text = "Save Scan As";
@@ -1033,7 +1040,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_ScanAvg.Controls.Add(this.label34);
             this.GroupBox_ScanAvg.Location = new System.Drawing.Point(3, 222);
             this.GroupBox_ScanAvg.Name = "GroupBox_ScanAvg";
-            this.GroupBox_ScanAvg.Size = new System.Drawing.Size(381, 56);
+            this.GroupBox_ScanAvg.Size = new System.Drawing.Size(384, 56);
             this.GroupBox_ScanAvg.TabIndex = 4;
             this.GroupBox_ScanAvg.TabStop = false;
             this.GroupBox_ScanAvg.Text = "Scan Average";
@@ -1057,6 +1064,8 @@ namespace ISC_Win_WinForm_GUI
             // 
             // GroupBox_LampControl
             // 
+            this.GroupBox_LampControl.Controls.Add(this.TextBox_WarmUpTime);
+            this.GroupBox_LampControl.Controls.Add(this.RadioButton_WarmUp);
             this.GroupBox_LampControl.Controls.Add(this.CheckBox_LampOn);
             this.GroupBox_LampControl.Controls.Add(this.TextBox_LampStableTime);
             this.GroupBox_LampControl.Controls.Add(this.RadioButton_LampStableTime);
@@ -1064,15 +1073,36 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_LampControl.Controls.Add(this.RadioButton_LampOn);
             this.GroupBox_LampControl.Location = new System.Drawing.Point(3, 85);
             this.GroupBox_LampControl.Name = "GroupBox_LampControl";
-            this.GroupBox_LampControl.Size = new System.Drawing.Size(381, 70);
+            this.GroupBox_LampControl.Size = new System.Drawing.Size(384, 70);
             this.GroupBox_LampControl.TabIndex = 2;
             this.GroupBox_LampControl.TabStop = false;
             this.GroupBox_LampControl.Text = "Lamp Control";
             // 
+            // TextBox_WarmUpTime
+            // 
+            this.TextBox_WarmUpTime.Location = new System.Drawing.Point(342, 18);
+            this.TextBox_WarmUpTime.Name = "TextBox_WarmUpTime";
+            this.TextBox_WarmUpTime.Size = new System.Drawing.Size(36, 22);
+            this.TextBox_WarmUpTime.TabIndex = 5;
+            this.TextBox_WarmUpTime.Text = "3";
+            this.TextBox_WarmUpTime.TextChanged += new System.EventHandler(this.TextBox_WarmUpTime_TextChanged);
+            // 
+            // RadioButton_WarmUp
+            // 
+            this.RadioButton_WarmUp.AutoSize = true;
+            this.RadioButton_WarmUp.Location = new System.Drawing.Point(209, 19);
+            this.RadioButton_WarmUp.Name = "RadioButton_WarmUp";
+            this.RadioButton_WarmUp.Size = new System.Drawing.Size(136, 18);
+            this.RadioButton_WarmUp.TabIndex = 4;
+            this.RadioButton_WarmUp.TabStop = true;
+            this.RadioButton_WarmUp.Text = "Warm-up (Unit: min)";
+            this.RadioButton_WarmUp.UseVisualStyleBackColor = true;
+            this.RadioButton_WarmUp.CheckedChanged += new System.EventHandler(this.RadioButton_WarmUp_CheckedChanged);
+            // 
             // CheckBox_LampOn
             // 
             this.CheckBox_LampOn.AutoSize = true;
-            this.CheckBox_LampOn.Location = new System.Drawing.Point(20, 22);
+            this.CheckBox_LampOn.Location = new System.Drawing.Point(3, 20);
             this.CheckBox_LampOn.Name = "CheckBox_LampOn";
             this.CheckBox_LampOn.Size = new System.Drawing.Size(103, 18);
             this.CheckBox_LampOn.TabIndex = 0;
@@ -1083,9 +1113,9 @@ namespace ISC_Win_WinForm_GUI
             // 
             // TextBox_LampStableTime
             // 
-            this.TextBox_LampStableTime.Location = new System.Drawing.Point(278, 42);
+            this.TextBox_LampStableTime.Location = new System.Drawing.Point(264, 42);
             this.TextBox_LampStableTime.Name = "TextBox_LampStableTime";
-            this.TextBox_LampStableTime.Size = new System.Drawing.Size(92, 22);
+            this.TextBox_LampStableTime.Size = new System.Drawing.Size(114, 22);
             this.TextBox_LampStableTime.TabIndex = 3;
             this.TextBox_LampStableTime.Text = "625";
             this.TextBox_LampStableTime.TextChanged += new System.EventHandler(this.TextBox_LampStableTime_TextChanged);
@@ -1094,7 +1124,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.RadioButton_LampStableTime.AutoSize = true;
             this.RadioButton_LampStableTime.Checked = true;
-            this.RadioButton_LampStableTime.Location = new System.Drawing.Point(20, 43);
+            this.RadioButton_LampStableTime.Location = new System.Drawing.Point(6, 43);
             this.RadioButton_LampStableTime.Name = "RadioButton_LampStableTime";
             this.RadioButton_LampStableTime.Size = new System.Drawing.Size(252, 18);
             this.RadioButton_LampStableTime.TabIndex = 2;
@@ -1106,7 +1136,7 @@ namespace ISC_Win_WinForm_GUI
             // RadioButton_LampOff
             // 
             this.RadioButton_LampOff.AutoSize = true;
-            this.RadioButton_LampOff.Location = new System.Drawing.Point(146, 21);
+            this.RadioButton_LampOff.Location = new System.Drawing.Point(107, 19);
             this.RadioButton_LampOff.Name = "RadioButton_LampOff";
             this.RadioButton_LampOff.Size = new System.Drawing.Size(102, 18);
             this.RadioButton_LampOff.TabIndex = 1;
@@ -1117,7 +1147,7 @@ namespace ISC_Win_WinForm_GUI
             // RadioButton_LampOn
             // 
             this.RadioButton_LampOn.AutoSize = true;
-            this.RadioButton_LampOn.Location = new System.Drawing.Point(20, 21);
+            this.RadioButton_LampOn.Location = new System.Drawing.Point(6, 19);
             this.RadioButton_LampOn.Name = "RadioButton_LampOn";
             this.RadioButton_LampOn.Size = new System.Drawing.Size(102, 18);
             this.RadioButton_LampOn.TabIndex = 0;
@@ -1133,7 +1163,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_RefSelect.Controls.Add(this.RadioButton_RefNew);
             this.GroupBox_RefSelect.Location = new System.Drawing.Point(3, 6);
             this.GroupBox_RefSelect.Name = "GroupBox_RefSelect";
-            this.GroupBox_RefSelect.Size = new System.Drawing.Size(381, 73);
+            this.GroupBox_RefSelect.Size = new System.Drawing.Size(384, 73);
             this.GroupBox_RefSelect.TabIndex = 1;
             this.GroupBox_RefSelect.TabStop = false;
             this.GroupBox_RefSelect.Text = "Reference Select";
@@ -2672,6 +2702,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // tabPage_Utility
             // 
+            this.tabPage_Utility.Controls.Add(this.GroupBox_LogFile);
             this.tabPage_Utility.Controls.Add(this.GroupBox_BleName);
             this.tabPage_Utility.Controls.Add(this.groupBox_Device);
             this.tabPage_Utility.Controls.Add(this.groupBox_ActivationKey);
@@ -2692,6 +2723,47 @@ namespace ISC_Win_WinForm_GUI
             this.tabPage_Utility.TabIndex = 1;
             this.tabPage_Utility.Text = "Utility";
             this.tabPage_Utility.UseVisualStyleBackColor = true;
+            // 
+            // GroupBox_LogFile
+            // 
+            this.GroupBox_LogFile.Controls.Add(this.Button_DisableLog);
+            this.GroupBox_LogFile.Controls.Add(this.Button_EnableLog);
+            this.GroupBox_LogFile.Controls.Add(this.Label_LogStatus);
+            this.GroupBox_LogFile.Location = new System.Drawing.Point(883, 532);
+            this.GroupBox_LogFile.Name = "GroupBox_LogFile";
+            this.GroupBox_LogFile.Size = new System.Drawing.Size(348, 62);
+            this.GroupBox_LogFile.TabIndex = 13;
+            this.GroupBox_LogFile.TabStop = false;
+            this.GroupBox_LogFile.Text = "Log File";
+            // 
+            // Button_DisableLog
+            // 
+            this.Button_DisableLog.Location = new System.Drawing.Point(267, 21);
+            this.Button_DisableLog.Name = "Button_DisableLog";
+            this.Button_DisableLog.Size = new System.Drawing.Size(75, 23);
+            this.Button_DisableLog.TabIndex = 2;
+            this.Button_DisableLog.Text = "Disable";
+            this.Button_DisableLog.UseVisualStyleBackColor = true;
+            this.Button_DisableLog.Click += new System.EventHandler(this.Button_DisableLog_Click);
+            // 
+            // Button_EnableLog
+            // 
+            this.Button_EnableLog.Location = new System.Drawing.Point(183, 21);
+            this.Button_EnableLog.Name = "Button_EnableLog";
+            this.Button_EnableLog.Size = new System.Drawing.Size(75, 23);
+            this.Button_EnableLog.TabIndex = 1;
+            this.Button_EnableLog.Text = "Enable";
+            this.Button_EnableLog.UseVisualStyleBackColor = true;
+            this.Button_EnableLog.Click += new System.EventHandler(this.Button_EnableLog_Click);
+            // 
+            // Label_LogStatus
+            // 
+            this.Label_LogStatus.AutoSize = true;
+            this.Label_LogStatus.Location = new System.Drawing.Point(6, 25);
+            this.Label_LogStatus.Name = "Label_LogStatus";
+            this.Label_LogStatus.Size = new System.Drawing.Size(139, 14);
+            this.Label_LogStatus.TabIndex = 0;
+            this.Label_LogStatus.Text = "Log File Status: Disable!";
             // 
             // GroupBox_BleName
             // 
@@ -3170,7 +3242,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_CalibCoeffs.Controls.Add(this.label29);
             this.GroupBox_CalibCoeffs.Location = new System.Drawing.Point(366, 182);
             this.GroupBox_CalibCoeffs.Name = "GroupBox_CalibCoeffs";
-            this.GroupBox_CalibCoeffs.Size = new System.Drawing.Size(511, 372);
+            this.GroupBox_CalibCoeffs.Size = new System.Drawing.Size(511, 285);
             this.GroupBox_CalibCoeffs.TabIndex = 9;
             this.GroupBox_CalibCoeffs.TabStop = false;
             this.GroupBox_CalibCoeffs.Text = "Calibration Coefficients";
@@ -3721,7 +3793,7 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_TivaFWUpdate.Controls.Add(this.ProgressBar_TivaFWUpdateStatus);
             this.GroupBox_TivaFWUpdate.Controls.Add(this.Button_TivaFWBrowse);
             this.GroupBox_TivaFWUpdate.Controls.Add(this.TextBox_TivaFWPath);
-            this.GroupBox_TivaFWUpdate.Controls.Add(this.label6);
+            this.GroupBox_TivaFWUpdate.Controls.Add(this.Label_TivaFWName);
             this.GroupBox_TivaFWUpdate.Location = new System.Drawing.Point(366, 6);
             this.GroupBox_TivaFWUpdate.Name = "GroupBox_TivaFWUpdate";
             this.GroupBox_TivaFWUpdate.Size = new System.Drawing.Size(511, 82);
@@ -3763,14 +3835,15 @@ namespace ISC_Win_WinForm_GUI
             this.TextBox_TivaFWPath.Size = new System.Drawing.Size(343, 22);
             this.TextBox_TivaFWPath.TabIndex = 1;
             // 
-            // label6
+            // Label_TivaFWName
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(7, 22);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(63, 14);
-            this.label6.TabIndex = 0;
-            this.label6.Text = "File Name";
+            this.Label_TivaFWName.AutoSize = true;
+            this.Label_TivaFWName.Location = new System.Drawing.Point(7, 22);
+            this.Label_TivaFWName.Name = "Label_TivaFWName";
+            this.Label_TivaFWName.Size = new System.Drawing.Size(63, 14);
+            this.Label_TivaFWName.TabIndex = 0;
+            this.Label_TivaFWName.Text = "File Name";
+            this.Label_TivaFWName.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Label_TivaFWName_MouseDoubleClick);
             // 
             // GroupBox_SerialNumber
             // 
@@ -3999,6 +4072,8 @@ namespace ISC_Win_WinForm_GUI
             this.panel_Saved_Scan.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView_savescan)).EndInit();
             this.tabPage_Utility.ResumeLayout(false);
+            this.GroupBox_LogFile.ResumeLayout(false);
+            this.GroupBox_LogFile.PerformLayout();
             this.GroupBox_BleName.ResumeLayout(false);
             this.GroupBox_BleName.PerformLayout();
             this.groupBox_Device.ResumeLayout(false);
@@ -4101,7 +4176,7 @@ namespace ISC_Win_WinForm_GUI
         private System.Windows.Forms.ProgressBar ProgressBar_TivaFWUpdateStatus;
         private System.Windows.Forms.Button Button_TivaFWBrowse;
         private System.Windows.Forms.TextBox TextBox_TivaFWPath;
-        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label Label_TivaFWName;
         private System.Windows.Forms.GroupBox groupBox_DevInfo;
         private System.Windows.Forms.Label label_DevInfoLampUsageValue;
         private System.Windows.Forms.Label label_DevInfoLampUsage;
@@ -4363,6 +4438,12 @@ namespace ISC_Win_WinForm_GUI
         private Label label17;
         private Button button_ExitCont;
         private Timer timer1;
+        private GroupBox GroupBox_LogFile;
+        private Button Button_DisableLog;
+        private Button Button_EnableLog;
+        private Label Label_LogStatus;
+        private TextBox TextBox_WarmUpTime;
+        private RadioButton RadioButton_WarmUp;
     }
 }
 

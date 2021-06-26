@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -54,7 +54,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\Debug\x86\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;x86</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WIN32</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <LangVersion>7.2</LangVersion>
@@ -65,7 +65,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>..\Release\x86\</OutputPath>
-    <DefineConstants>TRACE;x86</DefineConstants>
+    <DefineConstants>TRACE;WIN32</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -78,21 +78,28 @@
   <PropertyGroup>
     <ApplicationIcon>ISC_Logo.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>ISC_Win_WinForm_GUI.Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="isccs">
+    <Reference Include="isccs, Version=3.6.2.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>ISC-NIRScan-Library\isccs.dll</HintPath>
     </Reference>
-    <Reference Include="LiveCharts">
+    <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
       <HintPath>..\packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
     </Reference>
-    <Reference Include="LiveCharts.Geared">
+    <Reference Include="LiveCharts.Geared, Version=1.2.8.2, Culture=neutral, PublicKeyToken=7292f245d14ab8bf, processorArchitecture=MSIL">
       <HintPath>..\packages\LiveCharts.Geared.1.2.9\lib\net45\LiveCharts.Geared.dll</HintPath>
     </Reference>
     <Reference Include="LiveCharts.WinForms">
       <HintPath>..\packages\LiveCharts.WinForms.0.9.7.1\lib\net45\LiveCharts.WinForms.dll</HintPath>
     </Reference>
-    <Reference Include="LiveCharts.Wpf">
+    <Reference Include="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
       <HintPath>..\packages\LiveCharts.Wpf.0.9.7\lib\net45\LiveCharts.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\packages\log4net.2.0.12\lib\net40\log4net.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -163,6 +170,10 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="log4net.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -180,7 +191,6 @@
     <Content Include="Images\Led_G.png" />
     <Content Include="Images\Led_Gray.png" />
     <Content Include="Images\Led_R.png" />
-    <None Include="Resources\Release Notes.txt" />
     <None Include="Images\warning.png" />
     <Content Include="ISC_Logo.ico" />
   </ItemGroup>
@@ -199,9 +209,33 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if "$(DefineConstants.Contains('x64'))" == "True" (
-copy $(ProjectDir)\ISC-NIRScan-Library\x64\*.* $(TargetDir)
+if "$(DefineConstants.Contains('DEBUG'))" == "True" (
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\isccs_d.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\isccpp_d.* $(TargetDir)
 ) else (
-copy $(ProjectDir)\ISC-NIRScan-Library\*.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\isccs.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\isccpp.* $(TargetDir)
+)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\libdlpspec.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\hidapi.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\lmdfu.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\lmusbdll.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\msvcp140.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x64\vcruntime140.dll $(TargetDir)
+) else (
+if "$(DefineConstants.Contains('DEBUG'))" == "True" (
+copy $(ProjectDir)\ISC-NIRScan-Library\isccs_d.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\isccpp_d.* $(TargetDir)
+) else (
+copy $(ProjectDir)\ISC-NIRScan-Library\isccs.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\isccpp.* $(TargetDir)
+)
+copy $(ProjectDir)\ISC-NIRScan-Library\libdlpspec.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\hidapi.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\lmdfu.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\lmusbdll.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\msvcp140.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\vcruntime140.dll $(TargetDir)
 )
 </PostBuildEvent>
   </PropertyGroup>
