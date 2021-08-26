@@ -1,6 +1,21 @@
 ; -----------------------------------------------------------------------------
 ;
-; TivaWare USB DFU Boot Loader device driver installer
+; TivaWare USB DFU Runtime device driver installer
+;
+; The composite devices supported by this INF file contains a HID mouse with
+; a Device Firmware Upgrade runtime interface (basically, just a stub that
+; tells the host that the device supports DFU).  Since HID is supported
+; natively by Windows, no HID-specific sections are required here.  All this
+; file does, therefore, is ensure that the DFU drivers and WinUSB subsystem
+; are installed to support switching from DFU runtime mode into "real" DFU
+; mode in preparation for download and upload operations.
+;
+; This device offers DFU on interface number 1 and publishes PID 0x0A while in
+; runtime mode.  When it is switched to DFU mode (implemented by the boot_usb
+; boot loader), the device reenumerates and publishes PID 0xFF instead.  This
+; is seen as a different device by Windows and requires a second INF file to
+; support it.  This INF file is boot_usb.inf which installs exactly the same
+; files as this one.
 ;
 ; -----------------------------------------------------------------------------
 
@@ -10,12 +25,11 @@
 
 [Version]
 Signature = "$Windows NT$"
-Class = USBLibDFUDeviceClass
-ClassGuid={BDF4A2F9-552C-437b-892D-7CF600016A3F}
+Class = USBLibDFURuntimeDeviceClass
+ClassGuid={0D42186B-31A8-4800-B875-1A5525A407B9}
 Provider = %ProviderName%
-CatalogFile.NTx86=boot_usb_x86.cat
-CatalogFile.NTamd64=boot_usb_amd64.cat
-DriverVer=02/07/2014,2.1.0.12573
+CatalogFile=boot_demo_usb.cat
+DriverVer=10/18/2016,2.1.4.0
 
 ; ========== Manufacturer/Models sections ===========
 
@@ -26,10 +40,10 @@ DriverVer=02/07/2014,2.1.0.12573
 ; correct values for your device.
 
 [USBLibDFUDevice_WinUSB.NTx86]
-%USB\USBLibDFUDevice.DeviceDesc% =USB_Install, USB\VID_1CBE&PID_00FF
+%USB\USBLibDFUDevice.DeviceDesc% =DFU_Install, USB\VID_1CBE&PID_000A&MI_01
 
 [USBLibDFUDevice_WinUSB.NTamd64]
-%USB\USBLibDFUDevice.DeviceDesc% =USB_Install, USB\VID_1CBE&PID_00FF
+%USB\USBLibDFUDevice.DeviceDesc% =DFU_Install, USB\VID_1CBE&PID_000A&MI_01
 
 ; =================== Installation ===================
 
@@ -40,22 +54,22 @@ AddReg=AddReg_ClassInstall
 HKR,,,,"%DeviceClassDisplayName%"
 HKR,,Icon,,-1
 
-[USB_Install.NTx86]
+[DFU_Install.NTx86]
 Include=winusb.inf
 Needs=WINUSB.NT
 CopyFiles=System32_CopyFiles
 
-[USB_Install.NTamd64]
+[DFU_Install.NTamd64]
 Include=winusb.inf
 Needs=WINUSB.NT
 CopyFiles=SysWOW64_CopyFiles
 CopyFiles=System64_CopyFiles
 
-[USB_Install.NTx86.Services]
+[DFU_Install.NTx86.Services]
 Include=winusb.inf
 AddService=WinUSB,0x00000002,WinUSB_ServiceInstall
 
-[USB_Install.NTamd64.Services]
+[DFU_Install.NTamd64.Services]
 Include=winusb.inf
 AddService=WinUSB,0x00000002,WinUSB_ServiceInstall
 
@@ -66,36 +80,33 @@ StartType       = 3
 ErrorControl    = 1
 ServiceBinary   = %12%\WinUSB.sys
 
-[USB_Install.NTx86.Wdf]
-KmdfService=WINUSB, WinUsb_Install
+[DFU_Install.NTx86.Wdf]
+KmdfService=WINUSB, WinDFU_Install
 
-[USB_Install.NTamd64.Wdf]
-KmdfService=WINUSB, WinUsb_Install
+[DFU_Install.NTamd64.Wdf]
+KmdfService=WINUSB, WinDFU_Install
 
-[WinUSB_Install]
+[WinDFU_Install]
 KmdfLibraryVersion=1.9
 
-[USB_Install.NTx86.HW]
+[DFU_Install.NTx86.HW]
 AddReg=Dev_AddReg
 
-[USB_Install.NTamd64.HW]
+[DFU_Install.NTamd64.HW]
 AddReg=Dev_AddReg
 
-;
-; NOTE:
-;
-; The following GUID is used by software that accesses TivaWare DFU devices
-; (dfuprog and LM Flash Programmer).  If you want your device to be accessible
-; by these tools, don't change it.
-;
+; NOTE: The following GUID is used by software that accesses USBLib DFU
+; devices (dfuprog and LM Flash Programmer).  If you want your device to be
+; accessible by these tools, don't change it.
+
 [Dev_AddReg]
 HKR,,DeviceInterfaceGUIDs,0x10000,"{D17C772B-AF45-4041-9979-AAFE96BF6398}"
 
-[USB_Install.NTx86.CoInstallers]
+[DFU_Install.NTx86.CoInstallers]
 AddReg=CoInstallers_AddReg
 CopyFiles=CoInstallers_CopyFiles
 
-[USB_Install.NTamd64.CoInstallers]
+[DFU_Install.NTamd64.CoInstallers]
 AddReg=CoInstallers_AddReg
 CopyFiles=CoInstallers_CopyFiles
 
@@ -163,8 +174,8 @@ lmdfu64.lib=2
 
 [Strings]
 ProviderName="Texas Instruments Inc."
-USB\USBLibDFUDevice.DeviceDesc="TivaWare Device Firmware Upgrade"
+USB\USBLibDFUDevice.DeviceDesc="TivaWare Device Firmware Upgrade (runtime mode)"
 WinUSB_SvcDesc="WinUSB"
 DISK_NAME="TivaWare Install Disk"
-DeviceClassDisplayName="TivaWare Device Firmware Upgrade"
+DeviceClassDisplayName="TivaWare Device Firmware Upgrade (runtime mode)"
 
