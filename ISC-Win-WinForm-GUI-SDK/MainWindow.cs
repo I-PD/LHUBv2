@@ -109,6 +109,8 @@ namespace ISC_Win_WinForm_GUI
         private int previous_state = -1;
         private String BackupFacRef_Msg = "";
         private String RestoreFacRef_Msg = "";
+        private Boolean OpenFan = false;
+
         public enum FW_LEVEL
         {
             LEVEL_0, // TI EVM
@@ -116,7 +118,8 @@ namespace ISC_Win_WinForm_GUI
             LEVEL_2, // Tiva >= 2.1.0.X
             LEVEL_3, // Tiva >= 2.1.2
             LEVEL_4, // Tiva >= 2.4.0
-            LEVEL_5  // Tiva >= 3.3.0, extended wavelength version
+            LEVEL_5, // Tiva >= 3.3.0, extended wavelength version
+            LEVEL_6  // Tiva >= 3.5.0, extended wavelength version
         };
         public enum ScanConfigMode
         {
@@ -491,7 +494,7 @@ namespace ISC_Win_WinForm_GUI
                 ListBox_LocalCfgs.Items.Clear();
                 ListBox_TargetCfgs.Items.Clear();
                 toolStripStatus_DeviceStatus.Image = Properties.Resources.Led_R;
-                toolStripStatus_DeviceStatus.Text = "Device disconnected!";
+                toolStripStatus_DeviceStatus.Text = "Device Disconnect!";
                 ClearScanPlotsUI();
                 if (error)
                 {
@@ -685,6 +688,12 @@ namespace ISC_Win_WinForm_GUI
                 // Backup Factory Reference Data
                 DeviceConnectBackUpRef();
 
+                // Open Fan
+                Int32 MB_Ver = Encoding.ASCII.GetBytes(HWRev).First();
+                OpenFan = false;  // Initial value
+                if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && Device.DevInfo.ModelType == "R" && MB_Ver >= 'O' && IsActivated)
+                    Button_EnableFan_Click(null, null);
+
                 // Refresh error status
                 RefreshErrorStatus();
 
@@ -698,16 +707,20 @@ namespace ISC_Win_WinForm_GUI
                 {
                     SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
                 }
+                else
+                {
+                    settingFail = true;
+                }
 
                 if (Scan.IsLocalRefExist)
                     RadioButton_RefPre.Enabled = true;
                 else
                     RadioButton_RefPre.Enabled = false;
-
-                // Scan Setting
-                if (ActiveIndex < 0)
-                    settingFail = true;
             } while (false);
+
+            Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
+            if (!Device.IsConnected())
+                settingFail = true;
 
             BeginInvoke((Action)(() => //Invoke at UI thread
             {
@@ -3193,9 +3206,15 @@ namespace ISC_Win_WinForm_GUI
         private void CheckBox_LampOn_CheckedChanged(object sender, EventArgs e)
         {
             if (CheckBox_LampOn.Checked == true)
+            {
+                RadioButton_LampOn.Checked = true;
                 RadioButton_LampOn_CheckedChanged(sender, e);
+            }
             else
+            {
+                RadioButton_LampStableTime.Checked = true;
                 RadioButton_LampStableTime_CheckedChanged(sender, e);
+            }
         }
         private void RadioButton_LampOn_CheckedChanged(object sender, EventArgs e)
         {
@@ -3255,7 +3274,11 @@ namespace ISC_Win_WinForm_GUI
                 RadioButton_Intensity.Checked = true;
             }
             TextBox_LampStableTime.Enabled = false;
-            Scan.SetLamp(Scan.LAMP_CONTROL.OFF_SCAN);
+
+            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
+                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
+            else
+                Scan.SetLamp(Scan.LAMP_CONTROL.OFF_SCAN);
 
             Double ScanTime = Scan.GetEstimatedScanTime();
             if (ScanTime > 0)
@@ -3309,7 +3332,7 @@ namespace ISC_Win_WinForm_GUI
                             tivaTemp.Add(-1);
                         }
 
-                        Thread.Sleep(250);
+                        Thread.Sleep(100);
 
                         if (Device.ReadLampParam() == SDK.RETURN_PASS)
                         {
@@ -3374,7 +3397,14 @@ namespace ISC_Win_WinForm_GUI
             {
                 String text = "Warm-up Time must be numeric!";
                 MessageBox.Show(text, "Warning");
-                TextBox_WarmUpTime.Text = "3";
+
+                Byte[] HWRev = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev);
+                Int32 MB_Ver = HWRev[0];
+
+                if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
+                    TextBox_WarmUpTime.Text = "1";
+                else
+                    TextBox_WarmUpTime.Text = "3";
                 return;
             }
         }
@@ -3395,7 +3425,11 @@ namespace ISC_Win_WinForm_GUI
             CheckBox_AutoGain_CheckedChanged(sender, e);
             RadioButton_Absorbance.Enabled = true;
             RadioButton_Reflectance.Enabled = true;
-            Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+
+            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
+                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
+            else
+                Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
 
             Double ScanTime = Scan.GetEstimatedScanTime();
             if (ScanTime > 0)
@@ -3457,14 +3491,52 @@ namespace ISC_Win_WinForm_GUI
                             (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O'))
                         {
                             RadioButton_LampOn.Visible = false;
+                        }
+                        else
+                        {
+                            RadioButton_LampOn.Visible = true;
+                        }
+
+                        if (Device.DevInfo.ModelType == "R3")
+                        {
                             RadioButton_WarmUp.Visible = false;
                             TextBox_WarmUpTime.Visible = false;
                         }
                         else
                         {
-                            RadioButton_LampOn.Visible = true;
                             RadioButton_WarmUp.Visible = true;
                             TextBox_WarmUpTime.Visible = true;
+
+                            if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
+                                TextBox_WarmUpTime.Text = "1";
+                            else
+                                TextBox_WarmUpTime.Text = "3";
+                        }
+
+                        if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
+                        {
+                            Label_FanControl.Visible = true;
+                            Button_EnableFan.Visible = true;
+                            Button_DisableFan.Visible = true;
+
+                            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6)
+                            {
+                                Label_FanControl.Enabled = true;
+                                Button_EnableFan.Enabled = true;
+                                Button_DisableFan.Enabled = true;
+                            }
+                            else
+                            {
+                                Label_FanControl.Enabled = false;
+                                Button_EnableFan.Enabled = false;
+                                Button_DisableFan.Enabled = false;
+                            }
+                        }
+                        else
+                        {
+                            Label_FanControl.Visible = false;
+                            Button_EnableFan.Visible = false;
+                            Button_DisableFan.Visible = false;
                         }
 
                         RadioButton_LampOff.Visible = true;
@@ -3510,6 +3582,9 @@ namespace ISC_Win_WinForm_GUI
                         TextBox_WarmUpTime.Visible = false;
                         RadioButton_LampStableTime.Visible = false;
                         TextBox_LampStableTime.Visible = false;
+                        Label_FanControl.Visible = false;
+                        Button_EnableFan.Visible = false;
+                        Button_DisableFan.Visible = false;
 
                         RadioButton_LampStableTime.Checked = false;
 
@@ -3861,7 +3936,7 @@ namespace ISC_Win_WinForm_GUI
                 sw.WriteLine("##YUNITS=Intensity");
                 sw.WriteLine("##FIRSTX=" + Scan.WaveLength[0]);
                 sw.WriteLine("##LASTX=" + Scan.WaveLength[Scan.ScanDataLen - 1]);
-                sw.WriteLine("##PEAK TABLE=X+(Y..Y)");
+                sw.WriteLine("##XYPOINTS=(XY..XY)");
                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                 {
                     sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Intensity[i]);
@@ -3883,7 +3958,7 @@ namespace ISC_Win_WinForm_GUI
                 sw.WriteLine("##YUNITS=Absorbance(AU)");
                 sw.WriteLine("##FIRSTX=" + Scan.WaveLength[0]);
                 sw.WriteLine("##LASTX=" + Scan.WaveLength[Scan.ScanDataLen - 1]);
-                sw.WriteLine("##PEAK TABLE=X+(Y..Y)");
+                sw.WriteLine("##XYPOINTS=(XY..XY)");
                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                 {
                     sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Absorbance[i]);
@@ -3905,7 +3980,7 @@ namespace ISC_Win_WinForm_GUI
                 sw.WriteLine("##YUNITS=Reflectance(unitless)");
                 sw.WriteLine("##FIRSTX=" + Scan.WaveLength[0]);
                 sw.WriteLine("##LASTX=" + Scan.WaveLength[Scan.ScanDataLen - 1]);
-                sw.WriteLine("##PEAK TABLE=X+(Y..Y)");
+                sw.WriteLine("##XYPOINTS=(XY..XY)");
                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                 {
                     sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Reflectance[i]);
@@ -4138,14 +4213,10 @@ namespace ISC_Win_WinForm_GUI
                     {
                         if (MB_Ver >= 'F' && MB_Ver != 'N')
                         {
-                            int dataNum;
+                            int dataNum = (Scan.ScanConfigData.head.num_repeats > 30) ? 30 : Scan.ScanConfigData.head.num_repeats;
                             double[] lampADC = new double[4];
                             for (int j = 0; j < 4; j++)
                                 lampADC[j] = 0;
-                            if (Scan.ScanConfigData.head.num_repeats < 30)
-                                dataNum = Scan.ScanConfigData.head.num_repeats;
-                            else
-                                dataNum = 30;
 
                             for (int j = 0; j < dataNum; j++)
                             {
@@ -4188,12 +4259,12 @@ namespace ISC_Win_WinForm_GUI
                     {
                         if (MB_Ver >= 'F' && MB_Ver != 'N')
                         {
-                            int refScanRepeated = Scan.ReferenceScanConfigData.head.num_repeats;
+                            int dataNum = (Scan.ReferenceScanConfigData.head.num_repeats > 30) ? 30 : Scan.ReferenceScanConfigData.head.num_repeats;
                             double[] lampADC = new double[4];
                             for (int j = 0; j < 4; j++)
                                 lampADC[j] = 0;
 
-                            for (int j = 0; j < refScanRepeated; j++)
+                            for (int j = 0; j < dataNum; j++)
                             {
                                 lampADC[0] += Scan.ReferenceSensorData[4 + j * 4];
                                 lampADC[1] += Scan.ReferenceSensorData[4 + j * 4 + 1];
@@ -4202,7 +4273,7 @@ namespace ISC_Win_WinForm_GUI
                             }
                             for (int j = 0; j < 4; j++)
                             {
-                                lampADC[j] /= refScanRepeated;
+                                lampADC[j] /= dataNum;
                                 CSV[13, 8 + j] = String.Format("{0}", ((Device.DevInfo.ModelType != "R" && j > 0) ? "" : lampADC[j].ToString("F0")));
                             }
                         }
@@ -4276,11 +4347,13 @@ namespace ISC_Win_WinForm_GUI
             CSV[22, 8] = Lamp_Usage;
             CSV[23, 0] = PreStr + "UUID:";
             CSV[23, 1] = BitConverter.ToString(Device.DevInfo.DeviceUUID).Replace("-", ":");
-            CSV[23, 7] = "***Device/Error Status***";
+            CSV[23, 7] = "***Device/Error/Activation Status***";
             CSV[24, 0] = PreStr + "Main Board Version:";
             CSV[24, 1] = ((!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(0, 1) : "N/A");
             CSV[24, 7] = "Device Status:";
             CSV[24, 8] = "0x" + Device.DeviceStatus.ToString("X8");
+            CSV[24, 9] = "Activation Status:";
+            CSV[24, 10] = (IsActivated ? "Activated" : "Not activated");
             CSV[25, 0] = PreStr + "Detector Board Version:";
             CSV[25, 1] = ((!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(4, 1) : "N/A");
             CSV[25, 7] = "Error status:";
@@ -4438,6 +4511,13 @@ namespace ISC_Win_WinForm_GUI
             logFile.InfoFormat("Performing scan... Remained scans: {0}", TargetScanCounts - ScannedCounts);
             TimeScanStart = DateTime.Now;
             List<object> arguments = new List<object>();
+
+            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan && RadioButton_LampStableTime.Checked == true)
+            {
+                Scan.SetLamp(Scan.LAMP_CONTROL.ON_SCAN);
+                Thread.Sleep(625);
+            }
+
             if (UInt32.TryParse(TextBox_LampStableTime.Text, out LampStableTime))
                 Scan.SetLampDelay(LampStableTime);
             if (Scan.PerformScan(ReferenceSelect) == 0)
@@ -4465,6 +4545,10 @@ namespace ISC_Win_WinForm_GUI
             List<object> arguments = e.Result as List<object>;
             string result = (string)arguments[0];
             TimeSpan ts = (TimeSpan)arguments[1];
+
+            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
+                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
+
             Byte pga = Scan.PGA;  // If PGA is auto, it can only read the current value after scanning.
             RefreshErrorStatus();
             UpdateLampUsage();
@@ -4594,6 +4678,7 @@ namespace ISC_Win_WinForm_GUI
                 UserCancelScan = true;
                 Button_Scan.Text = "Scan";
                 SDK.IsConnectionChecking = true;
+                ScannedCounts = 0;
                 Text_ContScan.Text = (TargetScanCounts - ScannedCounts).ToString();
                 Label_ContScan.Text = "(" + ScannedCounts.ToString() + "/" + TargetScanCounts.ToString() + ")";
                 ProgressWindowCompleted();
@@ -4872,7 +4957,10 @@ namespace ISC_Win_WinForm_GUI
                     Label_SensorLampCM2Value.Text = "Read Failed!";
                 }
 
-                Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+                if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
+                    Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
+                else
+                    Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
             }
             SystemBusy(false);
         }
@@ -5578,7 +5666,10 @@ namespace ISC_Win_WinForm_GUI
                         Label_SensorLampVM1.Text = "Lamp 1 Current";
                         Label_SensorLampCM1.Text = "Lamp 2 Current";
                         Label_SensorLampVM2.Text = "Lamp 3 Current";
-                        Label_SensorLampCM2.Text = "Lamp 4 Current";
+                        if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6)
+                            Label_SensorLampCM2.Text = "Fan Current";
+                        else
+                            Label_SensorLampCM2.Text = "Lamp 4 Current";
                     }
                     else
                     {
@@ -5791,22 +5882,15 @@ namespace ISC_Win_WinForm_GUI
             if (Model == "R11")
             {
                 scanCfg.head.scan_type = 2;
-                scanCfg.head.num_sections = 2;
-                scanCfg.head.num_repeats = 30;
+                scanCfg.head.num_sections = 1;
+                scanCfg.head.num_repeats = 12;
 
                 scanCfg.section[0].section_scan_type = 1;
-                scanCfg.section[0].wavelength_start_nm = 1350;
-                scanCfg.section[0].wavelength_end_nm = 1750;
+                scanCfg.section[0].wavelength_start_nm = Device.DevInfo.MinWavelength;
+                scanCfg.section[0].wavelength_end_nm = Device.DevInfo.MaxWavelength;
                 scanCfg.section[0].width_px = 9;
-                scanCfg.section[0].num_patterns = 95;
+                scanCfg.section[0].num_patterns = 160;
                 scanCfg.section[0].exposure_time = 0;
-
-                scanCfg.section[1].section_scan_type = 1;
-                scanCfg.section[1].wavelength_start_nm = 1750;
-                scanCfg.section[1].wavelength_end_nm = 2150;
-                scanCfg.section[1].width_px = 12;
-                scanCfg.section[1].num_patterns = 80;
-                scanCfg.section[1].exposure_time = 0;
             }
             else
             {
@@ -6776,6 +6860,14 @@ namespace ISC_Win_WinForm_GUI
                      */
                     thisFwLevel = FW_LEVEL.LEVEL_0;
                 }
+                else if (curVer >= (3 << 16 | 5 << 8 | 0))  // >= 3.5.0
+                {
+                    /*
+                     * New Applications:
+                     * 1. Support model with fan
+                     */
+                    thisFwLevel = FW_LEVEL.LEVEL_6;
+                }
                 else if (curVer >= (3 << 16 | 3 << 8 | 0))  // >= 3.3.0
                 {
                     /*
@@ -7278,6 +7370,38 @@ namespace ISC_Win_WinForm_GUI
             }
         }
 
+        private void Button_ApplyConfig_Click(object sender, EventArgs e)
+        {
+            ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetCurrentConfig();
+            if (ushort.TryParse(textBox_ScanAvg.Text, out ushort scanAvg))
+            {
+                CurConfig.head.num_repeats = scanAvg;
+            }
+            else
+            {
+                Message.ShowError("Scan average number input error!");
+                return;
+            }
+
+            if (DevCurCfg_IsTarget)
+            {
+                ScanConfig.TargetConfig.RemoveAt(DevCurCfg_Index);
+                ScanConfig.TargetConfig.Insert(DevCurCfg_Index, CurConfig);
+                RefreshTargetCfgList();
+
+                SetScanConfig(ScanConfig.TargetConfig[DevCurCfg_Index], true, DevCurCfg_Index);
+            }
+            else
+            {
+                LocalConfig.RemoveAt(DevCurCfg_Index);
+                LocalConfig.Insert(DevCurCfg_Index, CurConfig);
+                RefreshLocalCfgList();
+
+                SetScanConfig(LocalConfig[DevCurCfg_Index], false, DevCurCfg_Index);
+            }
+            SaveCfgToLocalOrDevice(DevCurCfg_IsTarget);
+        }
+
         private void CheckBox_FileNamePrefix_CheckedChanged(object sender, EventArgs e)
         {
             String senderName = sender.GetType().Name;
@@ -7628,6 +7752,20 @@ namespace ISC_Win_WinForm_GUI
         {
             LogManager.GetRepository().Threshold = log4net.Core.Level.Off;
             Label_LogStatus.Text = "Log File Status: Disable!";
+        }
+
+        private void Button_EnableFan_Click(object sender, EventArgs e)
+        {
+            OpenFan = true;
+            Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
+            Label_FanControl.Text = "Fan Control: Enable!";
+        }
+
+        private void Button_DisableFan_Click(object sender, EventArgs e)
+        {
+            OpenFan = false;
+            Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+            Label_FanControl.Text = "Fan Control: Disable!";
         }
     }
 }

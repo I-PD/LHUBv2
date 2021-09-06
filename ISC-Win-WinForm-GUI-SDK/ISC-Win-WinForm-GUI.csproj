@@ -82,8 +82,7 @@
     <StartupObject>ISC_Win_WinForm_GUI.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="isccs, Version=3.6.2.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="isccs">
       <HintPath>ISC-NIRScan-Library\isccs.dll</HintPath>
     </Reference>
     <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
