@@ -23,6 +23,7 @@ using System.Linq;
 using System.Net;
 using log4net;
 using System.Data;
+using System.Security.AccessControl;
 
 namespace ISC_Win_WinForm_GUI
 {
@@ -94,6 +95,7 @@ namespace ISC_Win_WinForm_GUI
         public static String buildin_ref_time = "";
         private Boolean isCancellingConfigEdit = false;
         private Boolean isSelectingConfig = false;
+        private bool isApplyingConfig = false;
 
         public static bool UserCancelScan = false;
         private int TargetScanCounts = 0;
@@ -109,7 +111,6 @@ namespace ISC_Win_WinForm_GUI
         private String RestoreFacRef_Msg = "";
 
         // For Utility
-        private Boolean OpenFan = false;
         private ScanConfig.SlewScanConfig tmpCfg;
 
         public enum FW_LEVEL
@@ -493,9 +494,9 @@ namespace ISC_Win_WinForm_GUI
             String text = Text;
             MessageBox.Show(text, "Warning");
         }
-#endregion
+        #endregion
 
-#region connect device
+        #region connect device
         private void Device_Disconncted_Handler(bool error)
         {
             BeginInvoke((Action)(() => //Invoke at UI thread
@@ -534,7 +535,7 @@ namespace ISC_Win_WinForm_GUI
         }
         private void Enumerate_Devices()
         {
-            Device.Enumerate();
+            //Device.Enumerate();
             Device.Open(null);
         }
         private void Connecting_Device(String ModelnSN)
@@ -547,212 +548,178 @@ namespace ISC_Win_WinForm_GUI
             isInitialization = true;
             this.Text = AppName + string.Format("v{0}: {1} (Wavelength Range: {2} - {3}nm)",
                 this.Version,
-                Device.DevInfo.MinWavelength == 900 ? "Standard" : "Extended",
+                Device.DevInfo.MinWavelength == 900 ? "Standard" : Device.DevInfo.MinWavelength == 1350 ? "Extended" : "Extended Plus",
                 Device.DevInfo.MinWavelength, Device.DevInfo.MaxWavelength);
-
-            // Clear old information
-            BackupFacRef_Msg = "";
-            RestoreFacRef_Msg = "";
-            Label_SensorBattCapacity.Text = "";
-            Label_SensorBattStatus.Text = "";
-            Label_SensorHumidity.Text = "";
-            Label_SensorSysTemp.Text = "";
-            Label_SensorTivaTemp.Text = "";
-            Label_SensorLampVM1Value.Text = "";
-            Label_SensorLampCM1Value.Text = "";
-            Label_SensorLampVM2Value.Text = "";
-            Label_SensorLampCM2Value.Text = "";
-            Label_CalCoeffVer.Text = "";
-            Label_RefCalVer.Text = "";
-            Label_ScanCfgVer.Text = "";
-            TextBox_P2WCoeff0.Text = "";
-            TextBox_P2WCoeff1.Text = "";
-            TextBox_P2WCoeff2.Text = "";
-            TextBox_ShiftVectCoeff0.Text = "";
-            TextBox_ShiftVectCoeff1.Text = "";
-            TextBox_ShiftVectCoeff2.Text = "";
-            TextBox_Key.Text = "";
-            TextBox_ModelName.Text = "";
-            TextBox_SerialNumber.Text = "";
-            TextBox_DateTime.Text = "";
-            TextBox_LampUsage.Text = "";
-            TextBox_BLE_Display_Name.Text = "";
 
             bool settingFail = false;
             String warningMsg = String.Empty;
 
-            do
+            try
             {
-                DBG.WriteLine("Device <{0}> connected successfullly !", SerialNumber);
-                logFile.InfoFormat("Device <{0}> connected successfullly !", SerialNumber);
+                // Clear old information
+                BackupFacRef_Msg = "";
+                RestoreFacRef_Msg = "";
+                Label_SensorBattCapacity.Text = "";
+                Label_SensorBattStatus.Text = "";
+                Label_SensorHumidity.Text = "";
+                Label_SensorSysTemp.Text = "";
+                Label_SensorTivaTemp.Text = "";
+                Label_SensorLampVM1Value.Text = "";
+                Label_SensorLampCM1Value.Text = "";
+                Label_SensorLampVM2Value.Text = "";
+                Label_SensorLampCM2Value.Text = "";
+                Label_CalCoeffVer.Text = "";
+                Label_RefCalVer.Text = "";
+                Label_ScanCfgVer.Text = "";
+                TextBox_P2WCoeff0.Text = "";
+                TextBox_P2WCoeff1.Text = "";
+                TextBox_P2WCoeff2.Text = "";
+                TextBox_ShiftVectCoeff0.Text = "";
+                TextBox_ShiftVectCoeff1.Text = "";
+                TextBox_ShiftVectCoeff2.Text = "";
+                TextBox_Key.Text = "";
+                TextBox_ModelName.Text = "";
+                TextBox_SerialNumber.Text = "";
+                TextBox_DateTime.Text = "";
+                TextBox_LampUsage.Text = "";
+                TextBox_BLE_Display_Name.Text = "";
 
-                // Checking if a valid scan config flag
-                if (Device.DevInfo.CfgRev == 0 || Device.DevInfo.CfgRev == 255 || ScanConfig.GetTargetCfgListNum() == 0)
+                do
                 {
-                    Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
-                    if (!Device.IsConnected())
-                    {
-                        settingFail = true;
-                        break;
-                    }
-                    else
-                    {
-                        Int32 ret = SetDefaultConfig();
-                        warningMsg += "There is no scan config in the device!\nSet default scan config to device: " + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
-                    }
-                }
+                    DBG.WriteLine("Device <{0}> connected successfullly !", SerialNumber);
+                    logFile.InfoFormat("Device <{0}> connected successfullly !", SerialNumber);
 
-                // Checking if a valid cal coeff flag
-                if (Device.DevInfo.CalRev == 0 || Device.DevInfo.CalRev == 255)
-                {
-                    Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
-                    if (!Device.IsConnected())
+                    // Check HW version valid or not
+                    byte MB_Ver = (Device.IsConnected() && !string.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev).First() : (byte)0;
+                    byte DB_Ver = (Device.IsConnected() && !string.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev).ElementAt(4) : (byte)0;
+                    if (MB_Ver == 'X' || MB_Ver == '?')
+                        warningMsg += "Main board version check: unknown!\n";
+                    if (DB_Ver == 'X' || DB_Ver == '?')
+                        warningMsg += "Detector board version check: unknown!\n";
+                    if (MB_Ver == 'X' || MB_Ver == '?' || DB_Ver == 'X' || DB_Ver == '?')
+                        warningMsg += "If the scan cannot be performed correctly, please contact your agent for more information.\n\n";
+
+                    // Checking if a valid scan config flag
+                    if (Device.DevInfo.CfgRev == 0 || Device.DevInfo.CfgRev == 255 || ScanConfig.GetTargetCfgListNum() == 0)
                     {
-                        settingFail = true;
-                        break;
+                        warningMsg += "There is no scan config in the device!\n";
                     }
-                    else
+
+                    // Checking if a valid cal coeff flag
+                    if (Device.DevInfo.CalRev == 0 || Device.DevInfo.CalRev == 255)
                     {
-                        Int32 ret = Device.SetGenericCalibStruct();
+                        warningMsg += "There is no valid calibration coefficients in the device!\n";
+                    }
+
+                    // Checking if a valid ref cal flag
+                    if (Device.DevInfo.RefCalRev == 0 || Device.DevInfo.RefCalRev == 255)
+                    {
+                        warningMsg += "There is no valid reference calibration data in the device!\nPlease do the reference calibration before a scan.\n\n";
+                    }
+
+                    // Checking if a valid model name
+                    if (Device.DevInfo.ModelName == "")
+                    {
+                        warningMsg += "There is no model name data in the device!\n";
+                    }
+
+                    // Checking if a valid serial number
+                    if (Device.DevInfo.SerialNumber == "")
+                    {
+                        warningMsg += "There is no serial number data in the device!\n";
+                    }
+
+                    if (GetFW_LEVEL(true) == FW_LEVEL.LEVEL_1)
+                    {
+                        warningMsg += "The version is too old.\nPlease update your TIVA FW.\n\n";
+                    }
+                    else if (GetFW_LEVEL() == FW_LEVEL.LEVEL_0)
+                    {
+                        warningMsg += "The device is not ISC product. Functions may be abnormal!\n\n";
+                    }
+
+                    if ((GetFW_LEVEL() >= FW_LEVEL.LEVEL_2 && Device.ChkBleExist() == 1) || MB_Ver == 0)
+                        Device.SetBluetooth(false);
+
+                    // Sync device date time
+                    DateTime Current = DateTime.Now;
+                    Device.DeviceDateTime DevDateTime = new Device.DeviceDateTime
+                    {
+                        Year = Current.Year,
+                        Month = Current.Month,
+                        Day = Current.Day,
+                        DayOfWeek = (Int32)Current.DayOfWeek,
+                        Hour = Current.Hour,
+                        Minute = Current.Minute,
+                        Second = Current.Second
+                    };
+                    Device.SetDateTime(DevDateTime);
+
+                    // Scan Config
+                    LoadLocalCfgList();
+                    PopulateCfgDetailItems();
+                    RefreshTargetCfgList();  // Only refresh UI because target config list has been loaded after device opened
+
+                    // Check activation status and automatically activate if we have the key in database
+                    GetActivationKeyStatus();
+                    AutoSetKey();
+
+                    // Get device information
+                    GetDeviceInfo();
+
+                    // Backup Factory Reference Data
+                    DeviceConnectBackUpRef();
+
+                    // Refresh error status
+                    RefreshErrorStatus();
+
+                    // Set config table enable
+                    EnableCfgItem(false);
+
+                    // Scan Plot Area
+                    Int32 ActiveIndex = ScanConfig.GetTargetActiveScanIndex();
+                    if (ActiveIndex >= 0)
+                    {
+                        ListBox_TargetCfgs.SelectedIndex = ActiveIndex;
+                        SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
+                    }
+                    else if (ActiveIndex == SDK.RETURN_FAIL)
+                    {
+                        Int32 ret = ScanConfig.SetTargetActiveScanIndex(0);
                         settingFail = (ret != SDK.RETURN_PASS) ? true : false;
-                        warningMsg += "There is no valid calibration coefficients in the device!\nSet generic values to device:" + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
+                        warningMsg += "There is no valid scan config index in the device!\nSet default scan config index to device: " + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
                     }
-                }
 
-                // Checking if a valid ref cal flag
-                if (Device.DevInfo.RefCalRev == 0 || Device.DevInfo.RefCalRev == 255)
-                {
-                    warningMsg += "There is no valid reference calibration data in the device!\nPlease do the reference calibration before a scan.\n\n";
-                }
-
-                // Checking if a valid model name
-                if (Device.DevInfo.ModelName == "")
-                {
-                    Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
-                    if (!Device.IsConnected())
-                    {
-                        settingFail = true;
-                        break;
-                    }
+                    if (Scan.IsLocalRefExist)
+                        RadioButton_RefPre.Enabled = true;
                     else
-                    {
-                        Int32 ret = Device.SetModelName("NIR-X-XX");
-                        settingFail = (ret != SDK.RETURN_PASS) ? true : false;
-                        warningMsg += "There is no model name data in the device!\nSet generic values to device: " + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
-                    }
-                }
+                        RadioButton_RefPre.Enabled = false;
+                } while (false);
 
-                // Checking if a valid serial number
-                if (Device.DevInfo.SerialNumber == "")
+                Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
+                if (!Device.IsConnected())
+                    settingFail = true;
+            }
+            catch (Exception e)
+            {
+                BeginInvoke((Action)(() => //Invoke at UI thread
                 {
-                    Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
-                    if (!Device.IsConnected())
-                    {
-                        settingFail = true;
-                        break;
-                    }
-                    else
-                    {
-                        Int32 ret = Device.SetSerialNumber("1234567");
-                        settingFail = (ret != SDK.RETURN_PASS) ? true : false;
-                        warningMsg += "There is no serial number data in the device!\nSet generic values to device: " + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
-                    }
-                }
-
-                String HWRev = (!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(0, 1) : String.Empty;
-                if (GetFW_LEVEL(true) == FW_LEVEL.LEVEL_1)
-                {
-                    warningMsg += "The version is too old.\nPlease update your TIVA FW.\n\n";
-                }
-                else if (GetFW_LEVEL() == FW_LEVEL.LEVEL_0)
-                {
-                    warningMsg += "The device is not ISC product. Functions may be abnormal!\n\n";
-                }
-
-                if ((GetFW_LEVEL() >= FW_LEVEL.LEVEL_2 && Device.ChkBleExist() == 1) || HWRev == String.Empty)
-                    Device.SetBluetooth(false);
-
-                // Sync device date time
-                DateTime Current = DateTime.Now;
-                Device.DeviceDateTime DevDateTime = new Device.DeviceDateTime
-                {
-                    Year = Current.Year,
-                    Month = Current.Month,
-                    Day = Current.Day,
-                    DayOfWeek = (Int32)Current.DayOfWeek,
-                    Hour = Current.Hour,
-                    Minute = Current.Minute,
-                    Second = Current.Second
-                };
-                Device.SetDateTime(DevDateTime);
-
-                // Scan Config
-                LoadLocalCfgList();
-                PopulateCfgDetailItems();
-                RefreshTargetCfgList();  // Only refresh UI because target config list has been loaded after device opened
-
-                // Check activation status and automatically activate if we have the key in database
-                GetActivationKeyStatus();
-                AutoSetKey();
-
-                // Get device information
-                GetDeviceInfo();
-
-                // Backup Factory Reference Data
-                DeviceConnectBackUpRef();
-
-                // Open Fan
-                Int32 MB_Ver = Encoding.ASCII.GetBytes(HWRev).First();
-                OpenFan = false;  // Initial value
-                if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && Device.DevInfo.ModelType == "R" && MB_Ver >= 'O' && IsActivated)
-                    Button_EnableFan_Click(null, null);
-
-                // Refresh error status
-                RefreshErrorStatus();
-
-                // Set config table enable
-                EnableCfgItem(false);
-
-                // Scan Plot Area
-                Int32 ActiveIndex = ScanConfig.GetTargetActiveScanIndex();
-                ListBox_TargetCfgs.SelectedIndex = ActiveIndex;
-                if (ActiveIndex >= 0)
-                {
-                    SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
-                }
-                else
-                {
-                    Int32 ret = ScanConfig.SetTargetActiveScanIndex(0);
-                    settingFail = (ret != SDK.RETURN_PASS) ? true : false;
-                    warningMsg += "There is no valid scan config index in the device!\nSet default scan config index to device: " + (ret == SDK.RETURN_PASS ? "Success\n\n" : "Fail\n\n");
-                }
-
-                if (Scan.IsLocalRefExist)
-                    RadioButton_RefPre.Enabled = true;
-                else
-                    RadioButton_RefPre.Enabled = false;
-            } while (false);
-
-            Thread.Sleep(SDK.ConnectionCheckInterval);  //Check if the lost info is caused by connection lost or read failed
-            if (!Device.IsConnected())
-                settingFail = true;
+                    ProgressWindowCompleted();
+                    Message.ShowError("Something wrong during device reading...\n{0}", e.Message);
+                }), null);
+            }
 
             BeginInvoke((Action)(() => //Invoke at UI thread
             {
-                if (!settingFail)
-                {
-                    UI_Setting_Connected();
-                    Chart_Refresh();
-                    isInitialization = false;
-                    if (userDefaultReference == ScanReference.Built_in)
-                        RadioButton_RefFac.Checked = true;
-                    else if (userDefaultReference == ScanReference.Previous)
-                        RadioButton_RefPre.Checked = true;
-                    else
-                        RadioButton_RefNew.Checked = true;
-                }
+                UI_Setting_Connected();
+                Chart_Refresh();
+                isInitialization = false;
+                if (userDefaultReference == ScanReference.Built_in)
+                    RadioButton_RefFac.Checked = true;
+                else if (userDefaultReference == ScanReference.Previous)
+                    RadioButton_RefPre.Checked = true;
                 else
-                    UI_no_connection();
+                    RadioButton_RefNew.Checked = true;
 
                 ProgressWindowCompleted();
                 if (warningMsg != String.Empty)
@@ -933,12 +900,12 @@ namespace ISC_Win_WinForm_GUI
             toolStripStatus_DeviceStatus.Image = Properties.Resources.Led_G;
             if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_2 && !IsActivated)
             {
-                toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : "Extended Wavelength ") +
+                toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : Device.DevInfo.MinWavelength == 1350 ? "Extended Wavelength " : "Extended Plus Wavelength ") +
                     "Device: " + Device.DevInfo.ModelName + " (" + Device.DevInfo.SerialNumber + "), advanced functions locked!";
             }
             else
             {
-                toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : "Extended Wavelength ") +
+                toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : Device.DevInfo.MinWavelength == 1350 ? "Extended Wavelength " : "Extended Plus Wavelength ") +
                     "Device: " + Device.DevInfo.ModelName + " (" + Device.DevInfo.SerialNumber + ")";
             }
         }
@@ -984,9 +951,9 @@ namespace ISC_Win_WinForm_GUI
                 Button_Scan_Click(null, null);
             }), null);
         }
-#endregion
+        #endregion
 
-#region init
+        #region init
         private void InitSavedScanCfgItems()
         {
             Label_SavedScanType.Clear();
@@ -1172,6 +1139,9 @@ namespace ISC_Win_WinForm_GUI
             if (Directory.Exists(ConfigDir) == false)
             {
                 Directory.CreateDirectory(ConfigDir);
+                try { AddDirectorySecurity(ConfigDir); }
+                catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
+
                 DBG.WriteLine("The directory {0} was created.", ConfigDir);
                 logFile.InfoFormat("The directory {0} was created.", ConfigDir);
             }
@@ -1190,32 +1160,39 @@ namespace ISC_Win_WinForm_GUI
                 if (Directory.Exists(Dir_Scan_For_New) == false)
                 {
                     Directory.CreateDirectory(Dir_Scan_For_New);
+                    try { AddDirectorySecurity(Dir_Scan_For_New); }
+                    catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
+
                     DBG.WriteLine("The directory {0} was created.", Dir_Scan_For_New);
                     logFile.InfoFormat("The directory {0} was created.", Dir_Scan_For_New);
                 }
             }
             else
             {
-                XmlDocument XmlDoc = new XmlDocument();
-                XmlDoc.Load(FilePath);
+                Dir_Scan_For_New = Path.Combine(Directory.GetCurrentDirectory(), "Scan Results");
+                Dir_Scan_DataBase = Dir_Scan_For_New;
+                ScanFile_Formats = 0x81;
 
-                XmlNode ScanDir = XmlDoc.SelectSingleNode("/Settings/ScanDir");
-                if (ScanDir.InnerText == String.Empty)
-                    Dir_Scan_For_New = Path.Combine(Directory.GetCurrentDirectory(), "Scan Results");
-                else
-                    Dir_Scan_For_New = ScanDir.InnerText;
+                try
+                {
+                    XmlDocument XmlDoc = new XmlDocument();
+                    XmlDoc.Load(FilePath);
 
-                XmlNode DisplayDir = XmlDoc.SelectSingleNode("/Settings/DisplayDir");
-                if (DisplayDir.InnerText == String.Empty)
-                    Dir_Scan_DataBase = Dir_Scan_For_New;
-                else
-                    Dir_Scan_DataBase = DisplayDir.InnerText;
+                    XmlNode ScanDir = XmlDoc.SelectSingleNode("/Settings/ScanDir");
+                    if (ScanDir.InnerText != String.Empty)
+                        Dir_Scan_For_New = ScanDir.InnerText;
 
-                XmlNode FileFormats = XmlDoc.SelectSingleNode("/Settings/FileFormats");
-                if (FileFormats.InnerText == String.Empty)
-                    ScanFile_Formats = 0x81;
-                else
-                    ScanFile_Formats = Int32.Parse(FileFormats.InnerText);
+                    XmlNode DisplayDir = XmlDoc.SelectSingleNode("/Settings/DisplayDir");
+                    if (DisplayDir.InnerText != String.Empty)
+                        Dir_Scan_DataBase = DisplayDir.InnerText;
+
+                    XmlNode FileFormats = XmlDoc.SelectSingleNode("/Settings/FileFormats");
+                    if (FileFormats.InnerText != String.Empty)
+                        ScanFile_Formats = Int32.Parse(FileFormats.InnerText);
+                }
+                catch (UnauthorizedAccessException UAEx) { DBG.WriteLine(UAEx.Message); logFile.Error(UAEx.Message); }
+                catch (PathTooLongException PathEx) { DBG.WriteLine(PathEx.Message); logFile.Error(PathEx.Message); }
+                catch (Exception e) { DBG.WriteLine(e.Message); logFile.Error(e.Message); }
             }
             Int32 buf_ScanFile_Formats = ScanFile_Formats;
             CheckBox_SaveCombCSV.Checked = ((buf_ScanFile_Formats & 0x01) >> 0 == 1) ? true : false;
@@ -1227,9 +1204,9 @@ namespace ISC_Win_WinForm_GUI
             CheckBox_SaveRJDX.Checked = ((buf_ScanFile_Formats & 0x40) >> 6 == 1) ? true : false;
             CheckBox_SaveDAT.Checked = ((buf_ScanFile_Formats & 0x80) >> 7 == 1) ? true : false;
         }
-#endregion
+        #endregion
 
-#region Scan
+        #region Scan
         private void BeginScan()
         {
             if (!PBW.IsDisposed)
@@ -1270,7 +1247,8 @@ namespace ISC_Win_WinForm_GUI
                 PBW.Dispose();
             }
 
-            this.Invoke(new Action(() => {
+            this.Invoke(new Action(() =>
+            {
                 this.Activate();
                 frm.ShowDialog(this);
                 this.TopMost = true;
@@ -1383,8 +1361,8 @@ namespace ISC_Win_WinForm_GUI
             }
         }
 
-#endregion
-#region Scan Config
+        #endregion
+        #region Scan Config
         private void Button_SetActive_Click(object sender, EventArgs e)
         {
             if (TargetCfg_SelIndex < 0)
@@ -1405,6 +1383,8 @@ namespace ISC_Win_WinForm_GUI
         }
         private void SetScanConfig(ScanConfig.SlewScanConfig Config, Boolean IsTarget, Int32 index)
         {
+            isApplyingConfig = true;
+
             ClearScanPlotsUI();
             if (ScanConfig.SetScanConfig(Config) == SDK.RETURN_FAIL)
             {
@@ -1429,6 +1409,8 @@ namespace ISC_Win_WinForm_GUI
                 Button_Scan.Enabled = true;
 
             }
+
+            isApplyingConfig = false;
         }
         private void ListBox_TargetCfgs_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -2475,8 +2457,8 @@ namespace ISC_Win_WinForm_GUI
 
             return ret;
         }
-#endregion
-#region Saved scan
+        #endregion
+        #region Saved scan
         private void ClearSavedScanCfgItems()
         {
             for (Int32 i = 0; i < MAX_CFG_SECTION; i++)
@@ -2509,12 +2491,24 @@ namespace ISC_Win_WinForm_GUI
                     if (SearchPattern == "*.csv")
                     {
                         bool isCorrectFormat = false;
-                        foreach (string line in File.ReadLines(Files))
+                        try
                         {
-                            if (line.Contains("Scan Config Information"))
-                                isCorrectFormat = true;
-                            break;
+                            foreach (string line in File.ReadLines(Files))
+                            {
+                                if (line.Contains("Scan Config Information") ||
+                                    line.Contains("Scan Data") ||
+                                    line.Contains("Wavelength"))
+                                {
+                                    isCorrectFormat = true;
+                                    break;
+                                }
+                            }
                         }
+                        catch { }
+                        //catch(Exception e)
+                        //{
+                        //    Message.ShowWarning(e.Message);
+                        //}
 
                         if (!isCorrectFormat)
                             continue;
@@ -2529,7 +2523,7 @@ namespace ISC_Win_WinForm_GUI
             catch (PathTooLongException PathEx) { DBG.WriteLine(PathEx.Message); logFile.Error(PathEx.Message); }
             catch (Exception e)
             {
-                Message.ShowWarning("The display directory has not exist. Will set to default path.");
+                Message.ShowWarning(e.Message);
                 LoadFileSuccess = false;
                 DBG.WriteLine(e.Message);
                 logFile.Error(e.Message);
@@ -2610,12 +2604,15 @@ namespace ISC_Win_WinForm_GUI
             int checkCounts = 0;
             foreach (DataGridViewRow row in dataGridView_savescan.Rows)
                 checkCounts += Convert.ToInt32(row.Cells["Select"].Value);
-
-            CheckBox headerBox = (CheckBox)dataGridView_savescan.Controls["SelectAll"];
-            if (checkCounts == dataGridView_savescan.Rows.Count && checkCounts > 0)
-                headerBox.Checked = true;
-            else
-                headerBox.Checked = false;
+            try
+            {
+                CheckBox headerBox = (CheckBox)dataGridView_savescan.Controls["SelectAll"];
+                if (checkCounts == dataGridView_savescan.Rows.Count && checkCounts > 0)
+                    headerBox.Checked = true;
+                else
+                    headerBox.Checked = false;
+            }
+            catch { }
         }
 
         private void SavedScan_RefreshDataGridView()
@@ -2685,11 +2682,13 @@ namespace ISC_Win_WinForm_GUI
             {
                 Dir_Scan_DataBase = dlg.SelectedPath;
                 TextBox_SavedFileDirPath.Text = dlg.SelectedPath;
-
                 LoadSavedScanList();
                 SavedScan_RefreshDataGridView();
                 ClearSavedScanCfgItems();
                 SaveSettings();
+
+                try { AddDirectorySecurity(Dir_Scan_DataBase); }
+                catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
             }
         }
 
@@ -3069,31 +3068,76 @@ namespace ISC_Win_WinForm_GUI
             int dataCount = 0;
             string label = "";
             valX = Scan.WaveLength.ToArray();
+            bool dataValid = false;
 
             if ((bool)RadioButton_Intensity.Checked == true)
             {
-                List<double> doubleList = Scan.Intensity.ConvertAll(x => (double)x);
-                valY = doubleList.ToArray();
                 label = "Intensity";
+                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0)
+                {
+                    List<double> doubleList = Scan.Intensity.ConvertAll(x => (double)x);
+                    valY = doubleList.ToArray();
+                    dataValid = true;
+                }
+                else
+                {
+                    dataValid = false;
+                    if (AppLoaded)
+                        Message.ShowError("Sample intensity is not valid!");
+                }
             }
             else if ((bool)RadioButton_Absorbance.Checked == true)
             {
-                valY = Scan.Absorbance.ToArray();
                 label = "Absorbance";
+                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0 &&
+                    Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0 &&
+                    Scan.Absorbance != null && Scan.Absorbance.Count != 0 && Scan.Absorbance[0] != 0)
+                {
+                    valY = Scan.Absorbance.ToArray();
+                    dataValid = true;
+                }
+                else
+                {
+                    dataValid = false;
+                    if (AppLoaded)
+                        Message.ShowError("Can not calculate absorbance!\nSample or reference intensity is not valid!");
+                }
             }
             else if ((bool)RadioButton_Reflectance.Checked == true)
             {
-                valY = Scan.Reflectance.ToArray();
                 label = "Reflectance";
+                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0 &&
+                    Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0 && 
+                    Scan.Reflectance != null && Scan.Reflectance.Count != 0 && Scan.Reflectance[0] != 0)
+                {
+                    valY = Scan.Reflectance.ToArray();
+                    dataValid = true;
+                }
+                else
+                {
+                    dataValid = false;
+                    if (AppLoaded)
+                        Message.ShowError("Can not calculate reflectance!\nSample or reference intensity is not valid!");
+                }
             }
             else if ((bool)RadioButton_Reference.Checked == true)
             {
-                List<double> doubleList = Scan.ReferenceIntensity.ConvertAll(x => (double)x);
-                valY = doubleList.ToArray();
                 label = "Reference";
+                if (Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0)
+                {
+                    List<double> doubleList = Scan.ReferenceIntensity.ConvertAll(x => (double)x);
+                    valY = doubleList.ToArray();
+                    dataValid = true;
+                }
+                else
+                {
+                    dataValid = false;
+                    if (AppLoaded)
+                        Message.ShowError("Reference intensity is not valid!");
+                }
             }
 
-            if (!checkBox_zoom.Checked || updateAxis)
+            if ((!checkBox_zoom.Checked || updateAxis) && dataValid)
             {
                 MyChart.AxisX.Clear();
                 MyChart.AxisY.Clear();
@@ -3140,7 +3184,7 @@ namespace ISC_Win_WinForm_GUI
                     valY[i] = 0;
             }
 
-            if (valY.Length != 0 && Check_Overlay.Checked)
+            if (valY.Length != 0 && Check_Overlay.Checked && dataValid)
             {
                 for (int i = 0; i < Scan.ScanConfigData.head.num_sections; i++)
                 {
@@ -3163,12 +3207,15 @@ namespace ISC_Win_WinForm_GUI
                     });
                 }
             }
-            else if (valY.Length != 0)
+            else if (valY.Length != 0 && dataValid)
             {
-                for (int i = 0; i < Scan.ScanConfigData.head.num_sections; i++)
+                int secNum = Scan.ScanConfigData.head.num_sections == 0 ? 1 : Scan.ScanConfigData.head.num_sections;
+                
+                for (int i = 0; i < secNum; i++)
                 {
                     var chartValues = new GearedValues<ObservablePoint>();
-                    for (int j = 0; j < Scan.ScanConfigData.section[i].num_patterns; j++)
+                    int patNum = Scan.ScanConfigData.head.num_sections == 0 ? valY.Length : Scan.ScanConfigData.section[i].num_patterns;
+                    for (int j = 0; j < patNum; j++)
                         chartValues.Add(new ObservablePoint(valX[j + dataCount], valY[j + dataCount]));
 
                     dataCount += Scan.ScanConfigData.section[i].num_patterns;
@@ -3186,7 +3233,7 @@ namespace ISC_Win_WinForm_GUI
             }
 
             // For initial the chart to avoid the crazy axis numbers
-            if (Scan.ScanConfigData.head.num_sections == 0)
+            if (!dataValid)
             {
                 MyChart.Series.Add(new GLineSeries
                 {
@@ -3218,41 +3265,57 @@ namespace ISC_Win_WinForm_GUI
         }
         private void RadioButton_Reflectance_CheckedChanged(object sender, EventArgs e)
         {
-            if (Check_Overlay.Checked)//清除overlay的資料
+            RadioButton rBtn = sender as RadioButton;
+            if (rBtn.Checked)
             {
-                MyChart.Series.Clear();
+                if (Check_Overlay.Checked)//清除overlay的資料
+                {
+                    MyChart.Series.Clear();
+                }
+                SpectrumPlot(true);
             }
-            SpectrumPlot(true);
         }
 
         private void RadioButton_Absorbance_CheckedChanged(object sender, EventArgs e)
         {
-            if (Check_Overlay.Checked)//清除overlay的資料
+            RadioButton rBtn = sender as RadioButton;
+            if (rBtn.Checked)
             {
-                MyChart.Series.Clear();
+                if (Check_Overlay.Checked)//清除overlay的資料
+                {
+                    MyChart.Series.Clear();
+                }
+                SpectrumPlot(true);
             }
-            SpectrumPlot(true);
         }
 
         private void RadioButton_Intensity_CheckedChanged(object sender, EventArgs e)
         {
-            if (Check_Overlay.Checked)//清除overlay的資料
+            RadioButton rBtn = sender as RadioButton;
+            if (rBtn.Checked)
             {
-                MyChart.Series.Clear();
+                if (Check_Overlay.Checked)//清除overlay的資料
+                {
+                    MyChart.Series.Clear();
+                }
+                SpectrumPlot(true);
             }
-            SpectrumPlot(true);
         }
 
         private void RadioButton_Reference_CheckedChanged(object sender, EventArgs e)
         {
-            if (Check_Overlay.Checked)//清除overlay的資料
+            RadioButton rBtn = sender as RadioButton;
+            if (rBtn.Checked)
             {
-                MyChart.Series.Clear();
+                if (Check_Overlay.Checked)//清除overlay的資料
+                {
+                    MyChart.Series.Clear();
+                }
+                SpectrumPlot(true);
             }
-            SpectrumPlot(true);
         }
-#endregion
-#region scan item set
+        #endregion
+        #region scan item set
         private void CheckBox_AutoGain_CheckedChanged(object sender, EventArgs e)
         {
             if (CheckBox_AutoGain.Checked == true)
@@ -3336,10 +3399,7 @@ namespace ISC_Win_WinForm_GUI
             }
             TextBox_LampStableTime.Enabled = false;
 
-            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
-                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
-            else
-                Scan.SetLamp(Scan.LAMP_CONTROL.OFF_SCAN);
+            Scan.SetLamp(Scan.LAMP_CONTROL.OFF_SCAN);
 
             Double ScanTime = Scan.GetEstimatedScanTime();
             if (ScanTime > 0)
@@ -3491,10 +3551,8 @@ namespace ISC_Win_WinForm_GUI
             RadioButton_Absorbance.Enabled = true;
             RadioButton_Reflectance.Enabled = true;
 
-            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
-                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
-            else
-                Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+            Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+            Scan.SetLampDelay(LampStableTime);
 
             Double ScanTime = Scan.GetEstimatedScanTime();
             if (ScanTime > 0)
@@ -3510,15 +3568,8 @@ namespace ISC_Win_WinForm_GUI
                     String text = "Lamp Stable Time must be numeric!";
                     MessageBox.Show(text, "Warning");
                     TextBox_LampStableTime.Text = "625";
-                    return;
                 }
-
-                Scan.SetLampDelay(LampStableTime);
             }
-
-            Double ScanTime = Scan.GetEstimatedScanTime();
-            if (ScanTime > 0)
-                Label_EstimatedScanTime.Text = "Est. Device Scan Time: " + String.Format("{0:0.000}", ScanTime) + " secs.";
         }
 
         public enum GUI_State
@@ -3553,6 +3604,7 @@ namespace ISC_Win_WinForm_GUI
                         CheckBox_LampOn.Visible = false;
 
                         if ((Device.DevInfo.ModelType == "R3") ||
+                            (Device.DevInfo.ModelName.Contains("R3")) ||
                             (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O'))
                         {
                             RadioButton_LampOn.Visible = false;
@@ -3562,7 +3614,8 @@ namespace ISC_Win_WinForm_GUI
                             RadioButton_LampOn.Visible = true;
                         }
 
-                        if (Device.DevInfo.ModelType == "R3")
+                        if (Device.DevInfo.ModelType == "R3" ||
+                            Device.DevInfo.ModelName.Contains("R3"))
                         {
                             RadioButton_WarmUp.Visible = false;
                             TextBox_WarmUpTime.Visible = false;
@@ -3576,32 +3629,6 @@ namespace ISC_Win_WinForm_GUI
                                 TextBox_WarmUpTime.Text = "1";
                             else
                                 TextBox_WarmUpTime.Text = "3";
-                        }
-
-                        if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
-                        {
-                            Label_FanControl.Visible = true;
-                            Button_EnableFan.Visible = true;
-                            Button_DisableFan.Visible = true;
-
-                            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6)
-                            {
-                                Label_FanControl.Enabled = true;
-                                Button_EnableFan.Enabled = true;
-                                Button_DisableFan.Enabled = true;
-                            }
-                            else
-                            {
-                                Label_FanControl.Enabled = false;
-                                Button_EnableFan.Enabled = false;
-                                Button_DisableFan.Enabled = false;
-                            }
-                        }
-                        else
-                        {
-                            Label_FanControl.Visible = false;
-                            Button_EnableFan.Visible = false;
-                            Button_DisableFan.Visible = false;
                         }
 
                         RadioButton_LampOff.Visible = true;
@@ -3633,7 +3660,7 @@ namespace ISC_Win_WinForm_GUI
                         else
                             Label_ButtonStatus.Text = "Button Status: Read Failed!";
 
-                        toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : "Extended Wavelength ") +
+                        toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : Device.DevInfo.MinWavelength == 1350 ? "Extended Wavelength " : "Extended Plus Wavelength ") +
                             "Device: " + Device.DevInfo.ModelName + " (" + Device.DevInfo.SerialNumber + ")";
                         label_ActivateStatus.Text = "Activated!";
                         break;
@@ -3647,9 +3674,6 @@ namespace ISC_Win_WinForm_GUI
                         TextBox_WarmUpTime.Visible = false;
                         RadioButton_LampStableTime.Visible = false;
                         TextBox_LampStableTime.Visible = false;
-                        Label_FanControl.Visible = false;
-                        Button_EnableFan.Visible = false;
-                        Button_DisableFan.Visible = false;
 
                         RadioButton_LampStableTime.Checked = false;
 
@@ -3669,7 +3693,7 @@ namespace ISC_Win_WinForm_GUI
                         Label_BleNameValue.Enabled = false;
                         Label_BleNameValue.Text = "NA";
 
-                        toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : "Extended Wavelength ") +
+                        toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : Device.DevInfo.MinWavelength == 1350 ? "Extended Wavelength " : "Extended Plus Wavelength ") +
                             "Device: " + Device.DevInfo.ModelName + " (" + Device.DevInfo.SerialNumber + "), advanced functions locked!";
                         label_ActivateStatus.Text = "Not Activated!";
                         break;
@@ -3678,8 +3702,8 @@ namespace ISC_Win_WinForm_GUI
                     break;
             }
         }
-#endregion
-#region save scan to file
+        #endregion
+        #region save scan to file
         private void SaveToFiles()
         {
             String FileName = String.Empty;
@@ -3731,6 +3755,9 @@ namespace ISC_Win_WinForm_GUI
                     try
                     {
                         Directory.CreateDirectory(dirpath);
+                        try { AddDirectorySecurity(dirpath); }
+                        catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
+
                         TextBox_SaveDirPath.Text = dirpath;
                     }
                     catch (Exception e)
@@ -3750,6 +3777,8 @@ namespace ISC_Win_WinForm_GUI
                         if (!Directory.Exists(defpath))
                         {
                             Directory.CreateDirectory(defpath);
+                            try { AddDirectorySecurity(defpath); }
+                            catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
                         }
                         TextBox_SaveDirPath.Text = defpath;
                         FileName = defpath + "\\" + file;
@@ -3802,82 +3831,96 @@ namespace ISC_Win_WinForm_GUI
                         sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Absorbance[i] + "," + Scan.ReferenceIntensity[i] + "," + Scan.Intensity[i]);
                     }
                 }
-
-                if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_4)
+                if (checkBox_EnableBlackLevelData.Checked)
                 {
-                    byte[] HW_Ver = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev);
-                    int MB_Ver = HW_Ver[0];
-
-                    if (MB_Ver > 'E' && MB_Ver != 'N' && !(Device.DevInfo.ModelType == "F"))
+                    if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_4)
                     {
-                        Device.ReadLampAdcTimeStamp();
-                        Device.ReadLampRampUpData();
-                        sw.WriteLine("\n***Lamp Ramp Up ADC***");
-                        if (Device.DevInfo.ModelType == "R")
+                        byte[] HW_Ver = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev);
+                        int MB_Ver = HW_Ver[0];
+
+                        sw.WriteLine("\n***Scan Black Level Data***");
+                        for (int i = 0; i < Scan.BlackLevel.Count; i++)
                         {
-                            if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
-                            else
-                                sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
+                            sw.WriteLine((i + 1) + "," + Scan.BlackLevel[i]);
                         }
-                        else
+                        sw.WriteLine("\n***Scan Raw ADC Data***");
+                        for (int i = 0; i < Scan.RawData.Count; i++)
                         {
-                            if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC");
-                            else
-                                sw.WriteLine("ADC");
+                            sw.WriteLine((i + 1) + "," + Scan.RawData[i]);
                         }
-                        for (int i = 0; i < Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 && Device.LampRampUpADC[i * 4] != 0; i++)
+
+                        if (MB_Ver > 'E' && MB_Ver != 'N' && !(Device.DevInfo.ModelType == "F"))
                         {
+                            Device.ReadLampAdcTimeStamp();
+                            Device.ReadLampRampUpData();
+                            sw.WriteLine("\n***Lamp Ramp Up ADC***");
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                    sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
                                 else
-                                    sw.WriteLine(Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                    sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4]);
+                                    sw.WriteLine("Timestamp(ms),ADC");
                                 else
-                                    sw.WriteLine(Device.LampRampUpADC[i * 4]);
+                                    sw.WriteLine("ADC");
                             }
-                        }
+                            for (int i = 0; i < Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 && Device.LampRampUpADC[i * 4] != 0; i++)
+                            {
+                                if (Device.DevInfo.ModelType == "R")
+                                {
+                                    if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
+                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                    else
+                                        sw.WriteLine(Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                }
+                                else
+                                {
+                                    if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
+                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4]);
+                                    else
+                                        sw.WriteLine(Device.LampRampUpADC[i * 4]);
+                                }
+                            }
 
-                        Device.ReadLampRepeatedScanData();
-                        sw.WriteLine("\n***Lamp ADC among repeated times***");
-                        if (Device.DevInfo.ModelType == "R")
-                        {
-                            if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
-                            else
-                                sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
-                        }
-                        else
-                        {
-                            if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC");
-                            else
-                                sw.WriteLine("ADC");
-                        }
-                        for (int i = 0; i < Device.MAX_LAMP_REPEATED_SCAN_ADC_SIZE / 4 && Device.LampRepeatedScanADC[i * 4] != 0; i++)
-                        {
+                            Device.ReadLampRepeatedScanData();
+                            sw.WriteLine("\n***Lamp ADC among repeated times***");
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                    sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
                                 else
-                                    sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
-
+                                    sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4]);
+                                    sw.WriteLine("Timestamp(ms),ADC");
                                 else
-                                    sw.WriteLine(Device.LampRepeatedScanADC[i * 4]);
+                                    sw.WriteLine("ADC");
                             }
+                            for (int i = 0; i < Device.MAX_LAMP_REPEATED_SCAN_ADC_SIZE / 4 && Device.LampRepeatedScanADC[i * 4] != 0; i++)
+                            {
+                                if (Device.DevInfo.ModelType == "R")
+                                {
+                                    if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
+                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                    else
+                                        sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+
+                                }
+                                else
+                                {
+                                    if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
+                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4]);
+                                    else
+                                        sw.WriteLine(Device.LampRepeatedScanADC[i * 4]);
+                                }
+                            }
+
                         }
                     }
                 }
@@ -3991,7 +4034,7 @@ namespace ISC_Win_WinForm_GUI
                 catch
                 {
                     ProgressWindowCompleted();
-                    
+
                     ScannedCounts = 0;
                     UserCancelScan = true;
                     OneScanFileName = String.Empty;
@@ -4087,7 +4130,7 @@ namespace ISC_Win_WinForm_GUI
         }
         private void SaveToAverageCSV(String FileName)
         {
-            if(ScannedCounts == 1)
+            if (ScannedCounts == 1)
             {
                 // Initialization
                 AverageScanFileName = FileName;
@@ -4105,7 +4148,7 @@ namespace ISC_Win_WinForm_GUI
                 double basePartition, addInPartition;
 
                 basePartition = (double)(ScannedCounts - 1) / ScannedCounts;
-                addInPartition = (double) 1.0 / ScannedCounts;
+                addInPartition = (double)1.0 / ScannedCounts;
 
                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                 {
@@ -4114,7 +4157,7 @@ namespace ISC_Win_WinForm_GUI
                 }
             }
 
-            if(Device.ErrStatus != 0 && ScannedCounts == 1) // Do not save average if error detect at first scan
+            if (Device.ErrStatus != 0 && ScannedCounts == 1) // Do not save average if error detect at first scan
             {
                 AverageIntensity.Clear();
                 AverageAbsorbance.Clear();
@@ -4284,7 +4327,7 @@ namespace ISC_Win_WinForm_GUI
 
             if (Device.IsConnected())
                 MB_Ver = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev).First();
-            
+
             String[,] CSV = new String[28, 15];
 
             // Section information field names
@@ -4465,7 +4508,7 @@ namespace ISC_Win_WinForm_GUI
             CSV[20, 0] = PreStr + "GUI Version:";
             String GUIRev = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             GUIRev = GUIRev.Substring(0, GUIRev.LastIndexOf('.'));
-            CSV[20, 1] = GUIRev;
+            CSV[20, 1] = GUIRev + "b0422"; //Beta
             CSV[20, 7] = PreStr + "Versions (Cal/Ref/Cfg):";
             CSV[20, 8] = Device.DevInfo.CalRev.ToString();
             CSV[20, 9] = Device.DevInfo.RefCalRev.ToString();
@@ -4524,8 +4567,8 @@ namespace ISC_Win_WinForm_GUI
                 sw.WriteLine("##NPOINTS=" + TotalScanPtns);
             }
         }
-#endregion
-#region startScan
+        #endregion
+        #region startScan
         private void Button_Scan_Click(object sender, EventArgs e)
         {
             UserCancelScan = false;  // Clear this flag before scanning
@@ -4540,7 +4583,7 @@ namespace ISC_Win_WinForm_GUI
             if (Device.IsConnected())
             {
                 Button_ClearAllErrors_Click(this, null); // Clear previous scan error
-                if(Button_Scan.Text == "Continuous")
+                if (Button_Scan.Text == "Continuous")
                 {
                     button_ExitCont.Visible = false;
                     tabScanPage.TabPages[0].Enabled = true;
@@ -4602,7 +4645,7 @@ namespace ISC_Win_WinForm_GUI
             Text_ContScan.Text = TargetScanCounts.ToString();
             Label_ContScan.Text = String.Empty;
             Button_Scan.Text = "Scan";
-            
+
             tabScanPage.TabPages[0].Enabled = true;
             tabScanPage.TabPages[1].Enabled = true;
             tabControl_MainFunctions.TabPages[1].Enabled = true;
@@ -4649,14 +4692,6 @@ namespace ISC_Win_WinForm_GUI
             TimeScanStart = DateTime.Now;
             List<object> arguments = new List<object>();
 
-            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan && RadioButton_LampStableTime.Checked == true)
-            {
-                Scan.SetLamp(Scan.LAMP_CONTROL.ON_SCAN);
-                Thread.Sleep(625);
-            }
-
-            if (UInt32.TryParse(TextBox_LampStableTime.Text, out LampStableTime))
-                Scan.SetLampDelay(LampStableTime);
             if (Scan.PerformScan(ReferenceSelect) == 0)
             {
                 DBG.WriteLine("Scan completed!");
@@ -4683,15 +4718,12 @@ namespace ISC_Win_WinForm_GUI
             string result = (string)arguments[0];
             TimeSpan ts = (TimeSpan)arguments[1];
 
-            if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan && RadioButton_LampStableTime.Checked == true)
-                Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
-
             Byte pga = Scan.PGA;  // If PGA is auto, it can only read the current value after scanning.
             RefreshErrorStatus();
             UpdateLampUsage();
 
             ScannedCounts++;
-            
+
             if (result != "failed")
             {
                 SpectrumPlot(false);
@@ -4759,7 +4791,7 @@ namespace ISC_Win_WinForm_GUI
                         else
                             Scan.SetFixedPGAGain(true, 0); // This is set to auto PGA
                     }
-                    
+
                     ProgressWindowContentUpdate("Continuous scan in progress... \r\nPlease Wait!");
                     bwScan.RunWorkerAsync();
                 }
@@ -4772,7 +4804,8 @@ namespace ISC_Win_WinForm_GUI
                     if ((TargetScanCounts - ScannedCounts) > 0)
                     {
                         PBW.TopMost = false;
-                        this.Invoke(new Action(() => {
+                        this.Invoke(new Action(() =>
+                        {
                             this.Activate();
                             this.TopMost = true;
                             this.BringToFront();
@@ -4824,10 +4857,10 @@ namespace ISC_Win_WinForm_GUI
                 Message.ShowError("Scan Failed!");
             }
         }
-#endregion
+        #endregion
         //------------------------------------------------------------------------------------
-#region Utility
-#region Model Name
+        #region Utility
+        #region Model Name
         private void Button_ModelNameGet_Click(object sender, EventArgs e)
         {
             StringBuilder pOutBuf = new StringBuilder(128);
@@ -4885,8 +4918,8 @@ namespace ISC_Win_WinForm_GUI
             if (TextBox_BLE_Display_Name.Text != "")
                 Button_Get_BLE_Display_Name_Click(null, null);
         }
-#endregion
-#region Serial Number
+        #endregion
+        #region Serial Number
         //Serial Number
         private void Button_SerialNumberSet_Click(object sender, EventArgs e)
         {
@@ -4938,8 +4971,8 @@ namespace ISC_Win_WinForm_GUI
 
             pOutBuf.Clear();
         }
-#endregion
-#region Date and Time
+        #endregion
+        #region Date and Time
         //Date and Time
         private void Button_DateTimeSync_Click(object sender, EventArgs e)
         {
@@ -4980,8 +5013,8 @@ namespace ISC_Win_WinForm_GUI
             else
                 TextBox_DateTime.Text = "Get Failed!";
         }
-#endregion
-#region Lamp Usage
+        #endregion
+        #region Lamp Usage
         //Lamp Usage
         private String GetLampUsage()
         {
@@ -5035,8 +5068,8 @@ namespace ISC_Win_WinForm_GUI
             else
                 TextBox_LampUsage.Text = "Read Failed!";
         }
-#endregion
-#region Sensors
+        #endregion
+        #region Sensors
         //Sensors
         private void Button_SensorRead_Click(object sender, EventArgs e)
         {
@@ -5110,50 +5143,15 @@ namespace ISC_Win_WinForm_GUI
                     Label_SensorLampCM2Value.Text = "Read Failed!";
                 }
 
-                if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_6 && OpenFan)
-                    Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
-                else
-                    Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
+                Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
             }
             SystemBusy(false);
         }
-#endregion
-#region Tiva FW update
+        #endregion
+        #region Tiva FW update
         //Tiva FW update
         private UInt16 MAIN_USB_PID = 0x4200;
         private UInt16 MOTOR_USB_PID = 0x4210;
-        private void Label_TivaFWName_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            switch (e.Button)
-            {
-                case MouseButtons.Right:
-                    {
-                        DialogResult result = Message.ShowQuestion("Do you want to change USB handler to motor version?\n\nClick \"Yes\" to change handler, \"No\" to return the GUI.", "Change USB Handler");
-                        if (result == DialogResult.Yes)
-                        {
-                            if (!Motor.IsConnected())
-                                Motor.Open();
-                            Device.Set_USB_Handler(MOTOR_USB_PID);
-                        }
-
-                        break;
-                    }
-                case MouseButtons.Left:
-                    {
-                        if (Device.Get_USB_Handler() == MOTOR_USB_PID)
-                        {
-                            DialogResult result = Message.ShowQuestion("Do you want to change USB handler to standard version?\n\nClick \"Yes\" to change handler, \"No\" to return the GUI.", "Change USB Handler");
-                            if (result == DialogResult.Yes)
-                            {
-                                Device.Set_USB_Handler(MAIN_USB_PID);
-                            }
-                        }
-                        break;
-                    }
-                default:
-                    break;
-            }
-        }
 
         private void Button_TivaFWBrowse_Click(object sender, EventArgs e)
         {
@@ -5177,8 +5175,7 @@ namespace ISC_Win_WinForm_GUI
         }
         private void Button_TivaFWUpdate_Click(object sender, EventArgs e)
         {
-            if (((Device.IsConnected() && Device.Get_USB_Handler() == MAIN_USB_PID) ||
-                 (Motor.IsConnected() && Device.Get_USB_Handler() == MOTOR_USB_PID)) 
+            if (((Device.IsConnected() && Device.Get_USB_Handler() == MAIN_USB_PID))
                 && File.Exists(TextBox_TivaFWPath.Text))
             {
                 UI_no_connection();
@@ -5265,6 +5262,20 @@ namespace ISC_Win_WinForm_GUI
 
             e.Result = Device.Tiva_FW_Update(TextBox_TivaFWPath.Text);
 
+            if ((int)e.Result == 0)
+            {
+                Task.Run(() => Device.Close());
+                // Wait for reboot
+                int step = (100 - pValue) / 51;
+                int counts = 0;
+                while (counts < 50)
+                {
+                    Thread.Sleep(120);
+                    bwTivaUpdate.ReportProgress(pValue);
+                    counts++;
+                }
+            }
+
             pTimer.Enabled = false;
         }
 
@@ -5277,6 +5288,8 @@ namespace ISC_Win_WinForm_GUI
         private void bwTivaUpdate_DoSacnCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             int ret = (int)e.Result;
+
+            timer.Dispose();
             ProgressBar_TivaFWUpdateStatus.Value = 100;
 
             if (Device.Get_USB_Handler() == MOTOR_USB_PID)
@@ -5284,15 +5297,13 @@ namespace ISC_Win_WinForm_GUI
 
             if (ret == 0)
             {
-                Task.Run(() => Device.Close());
-                timer.Dispose();
+                SDK.IsEnableNotify = true;
                 String text = "Tiva FW updated successfully!";
                 MessageBox.Show(text, "Success");
                 Device.Open(null);
             }
             else
             {
-                timer.Dispose();
                 switch (ret)
                 {
                     case -1:
@@ -5337,13 +5348,13 @@ namespace ISC_Win_WinForm_GUI
                         break;
                 }
             }
+            //SDK.IsEnableNotify = true;
             SDK.AutoSearch = true;
-            SDK.IsEnableNotify = true;
             SDK.IsConnectionChecking = true;
             ProgressBar_TivaFWUpdateStatus.Value = 0;
         }
-#endregion
-#region DLPC150 FW Update
+        #endregion
+        #region DLPC150 FW Update
         //DLPC150 FW Update
         private void Button_DLPC150FWBrowse_Click(object sender, EventArgs e)
         {
@@ -5484,8 +5495,8 @@ namespace ISC_Win_WinForm_GUI
             SDK.AutoSearch = true;
             SDK.IsConnectionChecking = true;
         }
-#endregion
-#region Calibration Coefficients
+        #endregion
+        #region Calibration Coefficients
         //Calibration Coefficients
         private void Button_Cal_WriteGenCoeffs_Click(object sender, EventArgs e)
         {
@@ -5610,8 +5621,8 @@ namespace ISC_Win_WinForm_GUI
                 Button_Cal_RestoreDefaultCoeffs.Enabled = false;
             }
         }
-#endregion
-#region Device Information
+        #endregion
+        #region Device Information
         //Device Information
         private void GetDeviceInfo()
         {
@@ -5850,7 +5861,7 @@ namespace ISC_Win_WinForm_GUI
                 Message.ShowError("Input Key Length / Format Is Not Correct!");
                 return;
             }
-            
+
             DialogResult result = Message.ShowQuestion("Do you want to set it?", "Key", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
@@ -5920,9 +5931,9 @@ namespace ISC_Win_WinForm_GUI
                 GUI_Handler((int)MainWindow.GUI_State.KEY_NOT_ACTIVATE);
             }
         }
-#endregion
+        #endregion
 
-#region Reset Device
+        #region Reset Device
         //Device
         //Reset Device
         private void button_DeviceResetSys_Click(object sender, EventArgs e)
@@ -5954,8 +5965,8 @@ namespace ISC_Win_WinForm_GUI
         {
             SDK.IsConnectionChecking = true;
         }
-#endregion
-#region Update Reference Data
+        #endregion
+        #region Update Reference Data
         //Update Reference Data
         private void button_DeviceUpdateRef_Click(object sender, EventArgs e)
         {
@@ -6113,8 +6124,8 @@ namespace ISC_Win_WinForm_GUI
             }
             ScanConfig.SetScanConfig(tmpCfg);  // Set current config after update reference
         }
-#endregion
-#region Back up factory reference
+        #endregion
+        #region Back up factory reference
         //Back up factory reference
         private bool DeviceConnectBackUpRef()
         {
@@ -6215,9 +6226,9 @@ namespace ISC_Win_WinForm_GUI
             }
 
         }
-#endregion
+        #endregion
 
-#region Button Lock/Unlock
+        #region Button Lock/Unlock
 
         private void Button_LockButton_Click(object sender, EventArgs e)
         {
@@ -6255,9 +6266,9 @@ namespace ISC_Win_WinForm_GUI
             }
         }
 
-#endregion
+        #endregion
 
-#region BLE Advertising Name
+        #region BLE Advertising Name
 
         private void Button_Clear_BLE_Display_Name_Click(object sender, EventArgs e)
         {
@@ -6336,9 +6347,9 @@ namespace ISC_Win_WinForm_GUI
             pOutBuf.Clear();
         }
 
-#endregion
+        #endregion
 
-#region About
+        #region About
         //About
         private void button_AboutLicense_Click(object sender, EventArgs e)
         {
@@ -6355,9 +6366,19 @@ namespace ISC_Win_WinForm_GUI
             catch { }
         }
 
-#endregion
+        #endregion
 
-#endregion
+        #endregion
+
+        private void AddDirectorySecurity(string dirPath)
+        {
+            DirectoryInfo dInfo = new DirectoryInfo(dirPath);
+            DirectorySecurity dSecurity = dInfo.GetAccessControl();
+            InheritanceFlags inherits = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
+            string account = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
+            dSecurity.AddAccessRule(new FileSystemAccessRule(account, FileSystemRights.FullControl, inherits, PropagationFlags.None, AccessControlType.Allow));
+            dInfo.SetAccessControl(dSecurity);
+        }
 
         private void Button_SaveDirChange_Click(object sender, EventArgs e)
         {
@@ -6371,6 +6392,9 @@ namespace ISC_Win_WinForm_GUI
                     TextBox_SaveDirPath.Text = fbd.SelectedPath;
                     Dir_Scan_For_New = fbd.SelectedPath;
                     SaveSettings();
+
+                    try { AddDirectorySecurity(Dir_Scan_For_New); }
+                    catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
                 }
             }
         }
@@ -6388,7 +6412,7 @@ namespace ISC_Win_WinForm_GUI
 
         private void tabScanPage_SelectedIndexChanged(object sender, EventArgs e)
         {
-            switch(tabScanPage.SelectedIndex)
+            switch (tabScanPage.SelectedIndex)
             {
                 case 0:
                     {
@@ -6521,7 +6545,7 @@ namespace ISC_Win_WinForm_GUI
                 ctrl.Enabled = enabled;
             }
         }
-#region TIVA FW update timer
+        #region TIVA FW update timer
         private static int TivaUpdateTime = 1;
         static System.Threading.Timer timer;
         private static void TimerTask(object obj)
@@ -6537,7 +6561,7 @@ namespace ISC_Win_WinForm_GUI
                 MessageBox.Show("Tiva FW Update timeout!", "Tiva FW Update");
             }
         }
-#endregion
+        #endregion
 
         private void Check_Overlay_CheckedChanged(object sender, EventArgs e)
         {
@@ -6596,7 +6620,7 @@ namespace ISC_Win_WinForm_GUI
             if (userDefaultReference != ScanReference.Built_in)
                 RadioButton_RefPre_CheckedChanged(null, null);
         }
-#region Local Config
+        #region Local Config
         private void LoadLocalCfgList()
         {
             // Following is changed due to customer would like to use generic local config to copy to multiple devices
@@ -6695,7 +6719,7 @@ namespace ISC_Win_WinForm_GUI
                 RadioButton_RefPre_CheckedChanged(null, null);
         }
         private void Button_CopyCfgL2T_Click(object sender, EventArgs e)
-        {            
+        {
             int targetIdx = 0, localIdx = 0;
             if (LocalCfg_SelIndex < 0)
             {
@@ -6762,6 +6786,8 @@ namespace ISC_Win_WinForm_GUI
                 if (!Directory.Exists(ConfigDir))
                 {
                     Directory.CreateDirectory(ConfigDir);
+                    try { AddDirectorySecurity(ConfigDir); }
+                    catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
                 }
 
                 // Following is changed due to customer would like to use generic local config to copy to multiple devices
@@ -7005,7 +7031,7 @@ namespace ISC_Win_WinForm_GUI
             }
             return isExist;
         }
-#endregion
+        #endregion
         private static FW_LEVEL thisFwLevel = FW_LEVEL.LEVEL_0;
         public static FW_LEVEL GetFW_LEVEL()
         {
@@ -7193,15 +7219,23 @@ namespace ISC_Win_WinForm_GUI
             Root.AppendChild(FileFormats);
 
             // Save XML file
-            String FilePath = Path.Combine(ConfigDir, "ScanPageSettings.xml");
-            if (File.Exists(FilePath))
-                File.Delete(FilePath);
-            String dirpath = Path.GetDirectoryName(FilePath);
-            if (!Directory.Exists(dirpath))
+            try
             {
-                Directory.CreateDirectory(dirpath);
+                String FilePath = Path.Combine(ConfigDir, "ScanPageSettings.xml");
+                if (File.Exists(FilePath))
+                    File.Delete(FilePath);
+                String dirpath = Path.GetDirectoryName(FilePath);
+                if (!Directory.Exists(dirpath))
+                {
+                    Directory.CreateDirectory(dirpath);
+                    try { AddDirectorySecurity(dirpath); }
+                    catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
+                }
+                XmlDoc.Save(FilePath);
             }
-            XmlDoc.Save(FilePath);
+            catch (UnauthorizedAccessException UAEx) { DBG.WriteLine(UAEx.Message); logFile.Error(UAEx.Message); }
+            catch (PathTooLongException PathEx) { DBG.WriteLine(PathEx.Message); logFile.Error(PathEx.Message); }
+            catch (Exception e) { DBG.WriteLine(e.Message); logFile.Error(e.Message); }
         }
 
         private void Text_ContScan_TextChanged(object sender, EventArgs e)
@@ -7283,47 +7317,7 @@ namespace ISC_Win_WinForm_GUI
         {
             String Model = (!String.IsNullOrEmpty(Device.DevInfo.ModelName)) ? Device.DevInfo.ModelName : String.Empty;
             Model = (Model != String.Empty) ? Model.Substring(Model.LastIndexOf('-') + 1) : String.Empty;
-
-            ScanConfig.SlewScanConfig CurConfig = new ScanConfig.SlewScanConfig
-            {
-                section = new ScanConfig.SlewScanSection[5]
-            };
-            CurConfig.head.ScanConfig_serial_number = Device.DevInfo.SerialNumber;
-            CurConfig.head.config_name = "Column 1";
-            if (Model == "R11")
-            {
-                CurConfig.head.scan_type = 2;
-                CurConfig.head.num_sections = 2;
-                CurConfig.head.num_repeats = 6;
-
-                CurConfig.section[0].section_scan_type = 1;
-                CurConfig.section[0].wavelength_start_nm = 1350;
-                CurConfig.section[0].wavelength_end_nm = 1750;
-                CurConfig.section[0].width_px = 9;
-                CurConfig.section[0].num_patterns = 95;
-                CurConfig.section[0].exposure_time = 0;
-
-                CurConfig.section[1].section_scan_type = 1;
-                CurConfig.section[1].wavelength_start_nm = 1750;
-                CurConfig.section[1].wavelength_end_nm = 2150;
-                CurConfig.section[1].width_px = 12;
-                CurConfig.section[1].num_patterns = 80;
-                CurConfig.section[1].exposure_time = 0;
-            }
-            else
-            {
-                CurConfig.head.scan_type = 2;
-                CurConfig.head.num_sections = 1;
-                CurConfig.head.num_repeats = 6;
-
-                CurConfig.section[0].section_scan_type = 0;
-                CurConfig.section[0].wavelength_start_nm = Device.DevInfo.MinWavelength;
-                CurConfig.section[0].wavelength_end_nm = Device.DevInfo.MaxWavelength;
-                CurConfig.section[0].width_px = 6;
-                CurConfig.section[0].num_patterns = 228;
-                CurConfig.section[0].exposure_time = 0;
-            }
-
+            ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetDefaultConfig(Model);
 
             ScanConfig.TargetConfig.Clear();
             ScanConfig.TargetConfig.Add(CurConfig);
@@ -7355,7 +7349,7 @@ namespace ISC_Win_WinForm_GUI
         {
             SystemBusy(true);
 
-            if(t_PBW != null && t_PBW.IsAlive)
+            if (t_PBW != null && t_PBW.IsAlive)
             {
                 ProgressWindow(title, content, cancellable);
             }
@@ -7403,8 +7397,9 @@ namespace ISC_Win_WinForm_GUI
                 PBW.Close();
                 PBW.Dispose();
             }
-            
-            this.Invoke(new Action(() => {
+
+            this.Invoke(new Action(() =>
+            {
                 this.Activate();
                 SystemBusy(false);
                 this.TopMost = true;
@@ -7528,7 +7523,7 @@ namespace ISC_Win_WinForm_GUI
         private async void textBox_ScanAvg_TextChanged(object sender, EventArgs e)
         {
             // Wait until GUI initialized
-            if (isInitialization)
+            if (isInitialization || isApplyingConfig)
                 return;
 
             // Clear last processed text if user deleted all text
@@ -7567,6 +7562,7 @@ namespace ISC_Win_WinForm_GUI
                     ScanConfig.TargetConfig.RemoveAt(DevCurCfg_Index);
                     ScanConfig.TargetConfig.Insert(DevCurCfg_Index, CurConfig);
                     RefreshTargetCfgList();
+                    SaveCfgToLocalOrDevice(true);
 
                     SetScanConfig(ScanConfig.TargetConfig[DevCurCfg_Index], true, DevCurCfg_Index);
                 }
@@ -7575,10 +7571,10 @@ namespace ISC_Win_WinForm_GUI
                     LocalConfig.RemoveAt(DevCurCfg_Index);
                     LocalConfig.Insert(DevCurCfg_Index, CurConfig);
                     RefreshLocalCfgList();
+                    SaveCfgToLocalOrDevice(false);
 
                     SetScanConfig(LocalConfig[DevCurCfg_Index], false, DevCurCfg_Index);
                 }
-                SaveCfgToLocalOrDevice(DevCurCfg_IsTarget);
 
                 if (RadioButton_RefPre.Checked)
                     RadioButton_RefPre_CheckedChanged(null, null);
@@ -7842,13 +7838,13 @@ namespace ISC_Win_WinForm_GUI
 
         static bool prevSysBusyState = false;
         private void SystemBusy(bool enable)
-        {           
+        {
             Console.WriteLine("Set system busy: " + enable);
             if (enable ^ prevSysBusyState)
             {
                 prevSysBusyState = enable;
                 BeginInvoke((Action)(() => //Invoke at UI thread
-                {                
+                {
                     if (enable)
                         SpecificCtrlIgnoreList.Clear();
                     //ControlSpecificControls(this, "Button", !enable);
@@ -7862,7 +7858,7 @@ namespace ISC_Win_WinForm_GUI
                         UI_Setting_Connected();
                 }), null);
             }
-            Cursor.Current = enable ? Cursors.WaitCursor : Cursors.Default;  
+            Cursor.Current = enable ? Cursors.WaitCursor : Cursors.Default;
         }
 
         static List<string> SpecificCtrlIgnoreList = new List<string>();
@@ -7905,30 +7901,13 @@ namespace ISC_Win_WinForm_GUI
                 splitContainer1.SplitterDistance = this.Width - 25;
                 Console.WriteLine("Small 1200");
             }
-            else if(this.Width >= 1280 && tabControl_MainFunctions.SelectedIndex == 0)
+            else if (this.Width >= 1280 && tabControl_MainFunctions.SelectedIndex == 0)
             {
                 splitContainer1.Panel2Collapsed = false;
                 Console.WriteLine("Show container2");
             }
             Console.WriteLine("[{0} ~ {1}] : {2}", splitContainer1.Panel1MinSize, this.Width - splitContainer1.Panel2MinSize, splitContainer1.SplitterDistance);
 
-        }
-
-		// Codes hereunder are testing purpose for pressing the scan button clicking automatically
-        private void label2_DoubleClick(object sender, EventArgs e)
-        {
-            timer1.Enabled = !timer1.Enabled;
-            counts = 0;
-        }
-
-        static int counts;
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            counts++;
-            this.BringToFront();
-            Application.DoEvents();
-            this.Button_Scan.Text = "Scan " + counts;
-            Button_Scan_Click(this, null);
         }
 
         private void Button_EnableLog_Click(object sender, EventArgs e)
@@ -7943,18 +7922,94 @@ namespace ISC_Win_WinForm_GUI
             Label_LogStatus.Text = "Log File Status: Disable!";
         }
 
-        private void Button_EnableFan_Click(object sender, EventArgs e)
+        private void Button_GetFanDelayOffTime_Click(object sender, EventArgs e)
         {
-            OpenFan = true;
-            Scan.SetLamp(Scan.LAMP_CONTROL.OPEN_FAN);
-            Label_FanControl.Text = "Fan Control: Enable!";
+            textBox_FanOffTime.Text = Device.ReadFanDelayOffTime().ToString();
         }
 
-        private void Button_DisableFan_Click(object sender, EventArgs e)
+        private void Button_SetFanDelayOffTime_Click(object sender, EventArgs e)
         {
-            OpenFan = false;
-            Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
-            Label_FanControl.Text = "Fan Control: Disable!";
+            ushort t = 0;
+            if (UInt16.TryParse(textBox_FanOffTime.Text, out t))
+                Device.SetFanDelayOffTime(t);
+            else
+                ShowWarning("Not a correct input");
+        }
+
+        private void GroupBox_SaveScan_MouseDoubleClick(object sender, EventArgs e)
+        {
+            checkBox_EnableBlackLevelData.Visible = !checkBox_EnableBlackLevelData.Visible;
+        }
+
+        private void groupBox_Device_MouseDoubleClick(object sender, EventArgs e)
+        {
+            if (Device.DevInfo.TivaRev[0] >= 3 && Device.DevInfo.TivaRev[1] >= 6 && Device.DevInfo.TivaRev[1] >= 3)
+            {
+                label_FanOffTimeSetting.Visible = !label_FanOffTimeSetting.Visible;
+                textBox_FanOffTime.Visible = !textBox_FanOffTime.Visible;
+                Button_GetFanDelayOffTime.Visible = !Button_GetFanDelayOffTime.Visible;
+                Button_SetFanDelayOffTime.Visible = !Button_SetFanDelayOffTime.Visible;
+            }
+        }
+
+        private ToolTip tt;
+        private void tt_FanOffTime_Leave(object sender, EventArgs e)
+        {
+            tt.Dispose();
+        }
+
+        private void tt_FanOffTime_MouseClick(object sender, MouseEventArgs e)
+        {
+            tt = new ToolTip();
+            tt.InitialDelay = 0;
+            tt.IsBalloon = false;
+            tt.Show("Enter the FAN delay-off time in seconds (1~360, default = 30).", textBox_FanOffTime, 0);
+        }
+
+        // Codes hereunder are testing purpose for pressing the scan button clicking automatically
+        static int btnScanTestCounts;
+        private void timer_AutoClickScanButton_Tick(object sender, EventArgs e)
+        {
+            btnScanTestCounts++;
+            this.BringToFront();
+            Application.DoEvents();
+            this.Button_Scan.Text = "Scan " + btnScanTestCounts;
+            Button_Scan_Click(this, null);
+        }
+        private void label_ContinueScan_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            if (!timer_AutoClickScanButton.Enabled)
+            {
+                Double estScanTime = Scan.GetEstimatedScanTime();
+                timer_AutoClickScanButton.Interval = ((int)estScanTime + 5) * 1000;
+            }
+
+            timer_AutoClickScanButton.Enabled = !timer_AutoClickScanButton.Enabled;
+            btnScanTestCounts = 0;
+
+            if (timer_AutoClickScanButton.Enabled)
+            {
+                timer_AutoClickScanButton_Tick(this, null);
+            }
+        }
+
+        private void TextBox_LampStableTime_Leave(object sender, EventArgs e)
+        {
+            if (LampStableTime < 625)
+            {
+                String text = "Lamp Stable Time must be > 625ms to get stable scan result!";
+                MessageBox.Show(text, "Warning");
+                TextBox_LampStableTime.Text = "625";
+                LampStableTime = 625;
+            }
+            Scan.SetLampDelay(LampStableTime);
+
+            Double ScanTime = Scan.GetEstimatedScanTime();
+            if (ScanTime > 0)
+                Label_EstimatedScanTime.Text = "Est. Device Scan Time: " + String.Format("{0:0.000}", ScanTime) + " secs.";
         }
     }
 }
