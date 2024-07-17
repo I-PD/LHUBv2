@@ -57,7 +57,7 @@ namespace ISC_Win_WinForm_GUI
 
                         if (ret == DialogResult.Yes)
                             p.Kill();
-                        else if(ret == DialogResult.No)
+                        else if (ret == DialogResult.No)
                         {
                             Message.ShowError("GUI launch stopped!\n\nPlease close other related GUI's before start the program.");
                             return;
@@ -68,21 +68,11 @@ namespace ISC_Win_WinForm_GUI
 
             if (System.Diagnostics.Process.GetProcessesByName(currentProcName).Length > 1)
             {
-                DialogResult ret = Message.ShowQuestion("Existing ISC NIRScan SDK GUI detected!\n\nClose all other existig GUI?");
-
-                if (ret == DialogResult.Yes)
+                Process[] p = Process.GetProcessesByName(currentProcName).ToArray();
+                foreach (Process thisProc in p)
                 {
-                    Process[] p = Process.GetProcessesByName(currentProcName).ToArray();
-                    foreach (Process thisProc in p)
-                    {
-                        if (thisProc.Id != currentProc.Id)
-                            thisProc.Kill();
-                    }
-                }
-                else
-                {
-                    Message.ShowError("GUI launch stopped!\n\nPlease close other related GUI's before start the program.");
-                    return;
+                    if (thisProc.Id != currentProc.Id)
+                        thisProc.Kill();
                 }
             }
 

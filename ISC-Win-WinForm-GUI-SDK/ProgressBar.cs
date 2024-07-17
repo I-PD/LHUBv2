@@ -13,12 +13,64 @@ namespace ISC_Win_WinForm_GUI
 {
     public partial class ProgressBar : Form
     {
+        private readonly int origFormWidth = 414;
+        private readonly int origFormHeight = 175;
+
+        private readonly int tbWidth = 343;
+        private readonly int tbHeight = 39;
+        private readonly int tbPosX = 27;
+        private readonly int tbPosY = 12;
+
+        private readonly int btnWidth = 75;
+        private readonly int btnHeight = 33;
+        private readonly int btnPosX = 156;
+        private readonly int btnPosY = 93;
+
+        private readonly int pgbWidth = 343;
+        private readonly int pgbHeight = 23;
+        private readonly int pgbPosX = 27;
+        private readonly int pgbPosY = 59;
+
         System.Timers.Timer onTopTimer = new System.Timers.Timer();
         public static event Action UserCancelRequest = null;
         internal static bool SendUserCancelRequest { set { UserCancelRequest(); } }
-        public ProgressBar(String Title, String Content, Boolean Cancellable)
+        public ProgressBar(String Title, String Content, Boolean Cancellable, double? scaleX, double? scaleY)
         {
             InitializeComponent();
+            using (Graphics graphics = Graphics.FromHwnd(IntPtr.Zero))
+            {
+                float dpiX = graphics.DpiX;
+                float dpiY = graphics.DpiY;
+
+                if (scaleX == null || scaleX == 0)
+                    scaleX = 1.0;
+                if (scaleY == null || scaleY == 0)
+                    scaleY = 1.0;
+
+                float factorX = (float)((double)(dpiX / 96) * scaleX);
+                float factorY = (float)((double)(dpiY / 96) * scaleY);
+
+                System.Drawing.Size newSize = new System.Drawing.Size((int)(origFormWidth * factorX), (int)(origFormHeight * factorY));
+                System.Drawing.Point newPosition = new System.Drawing.Point(this.Bounds.Location.X, this.Bounds.Location.Y);
+
+                this.Bounds = new System.Drawing.Rectangle(newPosition, newSize);
+                this.Font = new System.Drawing.Font(this.Font.FontFamily, (float)((9F * scaleX) / 2) + (float)((9F * scaleY) / 2),
+                    System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+
+                newSize = new System.Drawing.Size((int)(tbWidth * factorX), (int)(tbHeight * factorY));
+                newPosition = new System.Drawing.Point((int)(tbPosX * factorX), (int)(tbPosY * factorY));
+                tb_content.Bounds = new System.Drawing.Rectangle(newPosition, newSize);
+                tb_content.Font = new System.Drawing.Font(this.Font.FontFamily, (float)((9F * scaleX) / 2) + (float)((9F * scaleY) / 2),
+                    System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+
+                newSize = new System.Drawing.Size((int)(btnWidth * factorX), (int)(btnHeight * factorY));
+                newPosition = new System.Drawing.Point((int)(btnPosX * factorX), (int)(btnPosY * factorY));
+                button_cancel.Bounds = new System.Drawing.Rectangle(newPosition, newSize);
+
+                newSize = new System.Drawing.Size((int)(pgbWidth * factorX), (int)(pgbHeight * factorY));
+                newPosition = new System.Drawing.Point((int)(pgbPosX * factorX), (int)(pgbPosY * factorY));
+                progressBar1.Bounds = new System.Drawing.Rectangle(newPosition, newSize);
+            }
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -26,7 +78,7 @@ namespace ISC_Win_WinForm_GUI
             MainWindow.RequestPBWClose += new Action(ProgressCompleted);
             MainWindow.RequestPBWContentChange += new Action<string>(UpdateContent);
             this.Text = Title;
-            tb_content.AutoSize = false;
+            tb_content.AutoSize = true;
             Point content_start_pos = new Point();
             content_start_pos.Y = tb_content.Location.Y;
             content_start_pos.X = (int) (this.Location.X + this.Width * 0.025);

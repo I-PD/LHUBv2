@@ -15,15 +15,18 @@ using LiveCharts.Wpf;
 using System.Threading;
 using System.Timers;
 using System.Xml.Serialization;
-using System.Windows.Threading;
 using System.Text.RegularExpressions;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Net;
 using log4net;
 using System.Data;
 using System.Security.AccessControl;
+using System.Windows.Media;
+using Color = System.Drawing.Color;
+using Wpf.CartesianChart.CustomTooltipAndLegend;
+using LiveCharts.Configurations;
+using Microsoft.Win32;
 
 namespace ISC_Win_WinForm_GUI
 {
@@ -33,18 +36,20 @@ namespace ISC_Win_WinForm_GUI
 
         private readonly String AppName = "ISC WinForms SDK GUI ";
         private bool AppLoaded = false;
+        private bool IsSavedScanData = false;
         private String Version = "";
+        private String Revision = "";
+        private formResize formResize;
 
         private const Int32 MAX_CFG_SECTION = 5;
         private List<ScanConfig.SlewScanConfig> LocalConfig = new List<ScanConfig.SlewScanConfig>();
-        private List<ComboBox> ComboBox_CfgScanType = new List<ComboBox>();
-        private List<ComboBox> ComboBox_CfgWidth = new List<ComboBox>();
+        private List<MyComboBox> ComboBox_CfgScanType = new List<MyComboBox>();
+        private List<MyComboBox> ComboBox_CfgWidth = new List<MyComboBox>();
         private List<ComboBox> ComboBox_CfgExposure = new List<ComboBox>();
         private List<TextBox> TextBox_CfgRangeStart = new List<TextBox>();
         private List<TextBox> TextBox_CfgRangeEnd = new List<TextBox>();
         private List<TextBox> TextBox_CfgDigRes = new List<TextBox>();
-        private List<Label> Label_Pattern = new List<Label>();
-        private List<Label> Label_maxPattern = new List<Label>();
+        private List<Label> Label_overSampleRate = new List<Label>();
 
         private Int32 TargetCfg_SelIndex = -1;       // Rocord device selected config
         private Int32 TargetCfg_Last_SelIndex = -1;  // Rocord last device selected config
@@ -62,6 +67,7 @@ namespace ISC_Win_WinForm_GUI
 
         private String Dir_Scan_DataBase = String.Empty;
         private String Dir_Scan_For_New = String.Empty;
+        private String CSV_Delimiter = String.Empty;
         public static String ConfigDir = String.Empty;
         private Int32 ScanFile_Formats = 0;
 
@@ -69,15 +75,32 @@ namespace ISC_Win_WinForm_GUI
         private List<bool> SavedScanSelectList = new List<bool>();
         private List<String> SavedScanFileList = new List<String>();
         private List<DateTime> SavedScanFileTimeList = new List<DateTime>();
+        private String CurrentScanFileName = String.Empty;
+        private String SelectScanFileName = String.Empty;
         List<Label> Label_SavedScanType = new List<Label>();
         List<Label> Label_SavedRangeStart = new List<Label>();
         List<Label> Label_SavedRangeEnd = new List<Label>();
         List<Label> Label_SavedWidth = new List<Label>();
         List<Label> Label_SavedDigRes = new List<Label>();
         List<Label> Label_SavedExposure = new List<Label>();
+        private List<SavedScanData> SavedScanList = new List<SavedScanData>();
+        private BindingList<SavedScanData> bindingSavedScanList;
 
-        public static bool IsActivated { get { if (Device.GetActivationResult() == 1) return true; else return false; } }
-        static bool isInitialization = false;
+        // Charts
+        private List<GLineSeries> ChartData_RefIntensity = new List<GLineSeries>();
+        private List<GLineSeries> ChartData_Intensity = new List<GLineSeries>();
+        private List<GLineSeries> ChartData_Absorbance = new List<GLineSeries>();
+        private List<GLineSeries> ChartData_Reflectance = new List<GLineSeries>();
+        Random rColor = new Random(Guid.NewGuid().GetHashCode());
+        private List<SolidColorBrush> StrokeColors = new List<SolidColorBrush>();
+        private readonly int NumOfStrokeColors = 512;
+        private bool Tooltips_Show_Details = false;
+        private ZoomingOptions userZoomOption = ZoomingOptions.Y;
+
+        private static bool IsActivated { get { if (Device.GetActivationResult() == 1) return true; else return false; } }
+        private static bool IsFetchingDeviceInfo = false;
+        private static bool IsFetchingDeviceInfoWithError = false;
+        private static string FetchingDevInfoErrMsg = "";
 
         private BackgroundWorker bwRefScanProgress;
         private String Tiva_FWDir = String.Empty;
@@ -94,12 +117,15 @@ namespace ISC_Win_WinForm_GUI
         private String pre_ref_time = "";
         public static String buildin_ref_time = "";
         private Boolean isCancellingConfigEdit = false;
+        private Boolean isSavingConfig = false;
         private Boolean isSelectingConfig = false;
-        private bool isApplyingConfig = false;
+        private bool isScanReference = false;
+        private bool isPrevScanReference = false;
 
         public static bool UserCancelScan = false;
         private int TargetScanCounts = 0;
         private int ScannedCounts = 0;
+        private int ScanErrorCounts = 0;
         private bool SaveOneCSVFile = false;
         private String OneScanFileName = String.Empty;
         private String AverageScanFileName = String.Empty;
@@ -112,6 +138,26 @@ namespace ISC_Win_WinForm_GUI
 
         // For Utility
         private ScanConfig.SlewScanConfig tmpCfg;
+        private int ModelNameGet_Click_Counts = 0;
+        private int SerialNumberGet_Click_Counts = 0;
+        private int SaveCSV_Click_Counts = 0;
+        private int SaveDAT_Click_Counts = 0;
+
+        // Special Controls
+        private readonly List<string> Con_Dev_With_FAN = new List<string> { "R11", "R13" };
+        private readonly List<string> Con_No_KeepLampOn = new List<string> { "R3", "R11", "R13", "R15", "R17" };
+        private readonly List<string> Con_OneMin_WarmUp = new List<string> { }; //"R11", "R13" };
+        private readonly List<string> Con_No_WarmUp = new List<string> { "R3", "R15", "R17" };
+        private readonly List<string> Con_OneNM_PixWidth = new List<string> { "R13", "T13", "F13" };
+
+        // Generic calibration coeffients
+        private readonly double calib_coeffs_diff_limit = 0.001;
+        private readonly double std_calib_coeffs_ShiftVectorCoeffs_0 = -2.74909;
+        private readonly double std_calib_coeffs_ShiftVectorCoeffs_1 = 0.0278162;
+        private readonly double std_calib_coeffs_ShiftVectorCoeffs_2 = -0.0000681733;
+        private readonly double std_calib_coeffs_PixelToWavelengthCoeffs_0 = 1784.902664;
+        private readonly double std_calib_coeffs_PixelToWavelengthCoeffs_1 = -0.874372;
+        private readonly double std_calib_coeffs_PixelToWavelengthCoeffs_2 = -0.000278;
 
         public enum FW_LEVEL
         {
@@ -149,10 +195,20 @@ namespace ISC_Win_WinForm_GUI
             MainWindowArgsParse(args);
             InitializeComponent();
 
+            formResize = new formResize(this);
+            this.Load += Form_Load;
+            this.SizeChanged += Form_Resize;
+            this.ResizeBegin += new System.EventHandler(MainWindow_ResizeResizeBegin);
+            this.ResizeEnd += new System.EventHandler(MainWindow_ResizeEnd);
+
             this.Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            this.Revision = this.Version.Substring(this.Version.LastIndexOf('.') + 1, this.Version.Length - this.Version.LastIndexOf('.') - 1);
             this.Version = this.Version.Substring(0, this.Version.LastIndexOf('.'));
             this.Text = AppName + string.Format("v{0}", this.Version);
-            lb_GUI_Version.Text = string.Format("v{0}", this.Version);
+            lb_GUI_Revision.Text = string.Format("rev.{0}", this.Revision);
+
+            DBG.WriteLine("GUI Version: {0}", this.Version);
+            logFile.InfoFormat("GUI Version: {0}", this.Version);
 
             // Initial event delegate
             this.FormClosing += Main_FormClosing;
@@ -168,6 +224,11 @@ namespace ISC_Win_WinForm_GUI
             RestoreFacRef_Msg = "";
             Label_CurrentConfig.ForeColor = System.Drawing.Color.OrangeRed;
             Label_CurrentConfig.Font = new System.Drawing.Font(Label_CurrentConfig.Font, System.Drawing.FontStyle.Bold);
+            Button_CopyCfgL2T.Text = "Copy" + System.Environment.NewLine + char.ConvertFromUtf32(8594);
+            Button_CopyCfgT2L.Text = "Copy" + System.Environment.NewLine + char.ConvertFromUtf32(8592);
+            Button_MoveCfgL2T.Text = "Move" + System.Environment.NewLine + char.ConvertFromUtf32(8594);
+            Button_MoveCfgT2L.Text = "Move" + System.Environment.NewLine + char.ConvertFromUtf32(8592);
+
             MainWindow_Loaded();
 #if DEBUG
             // Enable the CPP DLL debug output for development
@@ -183,6 +244,9 @@ namespace ISC_Win_WinForm_GUI
         }
         private void MainWindowArgsParse(string[] args)
         {
+            if (args == null)
+                return;
+
             foreach (string arg in args)
             {
                 if (arg.Substring(0, 1) != "/")
@@ -216,6 +280,50 @@ namespace ISC_Win_WinForm_GUI
             SaveSettings();
             Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
         }
+        private void Form_Load(object sender, EventArgs e)
+        {
+            formResize.get_initial_size();
+            Form_Resize(this, null);
+        }
+
+        int orgWidth = 0;
+        int orgHeight = 0;
+        bool reqSizeChange = true;
+        private void MainWindow_ResizeResizeBegin(object sender, EventArgs e)
+        {
+            orgWidth = this.Width;
+            orgHeight = this.Height;
+            reqSizeChange = false;
+            SuspendLayout();
+        }
+        private void Form_Resize(object sender, EventArgs e)
+        {
+            if (WindowState == FormWindowState.Maximized || (reqSizeChange && WindowState == FormWindowState.Normal))
+            {
+                var pga = (string)ComboBox_PGAGain.SelectedItem;
+                ComboBox_PGAGain.SelectedItem = "1";
+                MyChart.Visible = false;
+                formResize.resize();
+                formResize.resize(); 
+                ComboBox_PGAGain.SelectedItem = pga;
+                MyChart.Visible = true;
+                label_ContinuousMode.Font = new Font(label_ContinueScan.Font.FontFamily, label_ContinueScan.Font.Size * 2, ((System.Drawing.FontStyle)(System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic)));
+            }
+        }
+        private void MainWindow_ResizeEnd(object sender, EventArgs e)
+        {
+            var pga = (string)ComboBox_PGAGain.SelectedItem;
+            ComboBox_PGAGain.SelectedItem = "1";
+            MyChart.Visible = false;
+            formResize.resize();
+            formResize.resize();
+            ComboBox_PGAGain.SelectedItem = pga;
+            MyChart.Visible = true;
+            reqSizeChange = true;
+            ResumeLayout();
+            label_ContinuousMode.Font = new Font(label_ContinueScan.Font.FontFamily, label_ContinueScan.Font.Size * 2, ((System.Drawing.FontStyle)(System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic)));
+        }
+
         private void initBackgroundWorker()
         {
             bwDLPCUpdate = new BackgroundWorker();
@@ -264,13 +372,21 @@ namespace ISC_Win_WinForm_GUI
             TextBox_SavedFileDirPath.Text = Dir_Scan_DataBase;
 
             if (LogManager.GetRepository().Threshold == log4net.Core.Level.All)
-                Label_LogStatus.Text = "Log File Status: Enable!";
+                Label_LogStatus.Text = "Log File Status: Enabled";
             else
-                Label_LogStatus.Text = "Log File Status: Disable!";
+                Label_LogStatus.Text = "Log File Status: Disabled";
 
             this.TopMost = true;
             this.BringToFront();
             this.TopMost = false;
+            this.CenterToScreen();
+
+            ColourGenerator generator = new ColourGenerator();
+            for (int i = 0; i < NumOfStrokeColors; i++)
+            {
+                string colorHash = "#FF" + generator.NextColour();
+                StrokeColors.Add((SolidColorBrush)new BrushConverter().ConvertFrom(colorHash));
+            }
         }
         private void InitGUIItem()
         {
@@ -285,18 +401,20 @@ namespace ISC_Win_WinForm_GUI
             ComboBox_PGAGain.Enabled = false;
             CheckBox_AutoGain.Checked = true;
 
-            //SaveScan DataGridView
-            CheckBox dataGridView_savescan_CheckBox_SelectAll = new CheckBox
-            {
-                Name = "SelectAll",
-                Location = new Point(31, 6),
-                Size = new Size(15, 15)
-            };
-            dataGridView_savescan_CheckBox_SelectAll.Click += new EventHandler(dataGridView_savescan_CheckBox_SelectAll_CheckedChanged);
-            dataGridView_savescan.Controls.Add(dataGridView_savescan_CheckBox_SelectAll);
-
+            var MyTooltipContentMapper = Mappers.Xy<CustomerVm>()
+                                        .X(value => value.x)
+                                        .Y(value => value.y);
+            Charting.For<CustomerVm>(MyTooltipContentMapper);
+            
+            dataGridView_savescan.RowHeadersVisible = false;
+            dataGridView_savescan.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
+            dataGridView_savescan.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCellsExceptHeader;
+            dataGridView_savescan.AllowUserToResizeRows = false;
             RadioButton_SavedScanSelCsv.Checked = true;
             RadioButton_SavedScanSelDat.Checked = false;
+
+            CheckBox_SaveCombCSV.Checked = true;
+            CheckBox_SaveDAT.Checked = true;
         }
         #region Error 
         private String ErrMsg = String.Empty;
@@ -319,7 +437,7 @@ namespace ISC_Win_WinForm_GUI
                 if ((Device.ErrCode[0] & 0x08) > 0)
                     ErrMsg += "DLPC150 Crop Image Failed.    ";
                 if ((Device.ErrCode[0] & 0x10) > 0)
-                    ErrMsg += "ADC Data Error.    ";
+                    ErrMsg += "Scan ADC Data Overflow.    ";
                 if ((Device.ErrCode[0] & 0x20) > 0)
                     ErrMsg += "Scan Config Invalid.    ";
                 if ((Device.ErrCode[0] & 0x40) > 0)
@@ -531,12 +649,29 @@ namespace ISC_Win_WinForm_GUI
         private void Device_Found_Handler()
         {
             SDK.AutoSearch = false;
-            Enumerate_Devices();
+            int devCounts = Device.DeviceFound.Count();
+            if (devCounts > 1) 
+            {
+                string[,] devList = new string[devCounts, 2];
+                for(int i = 0; i < devCounts; i++)
+                {
+                    devList[i, 0] = Device.DeviceFound[i].ProductString;
+                    devList[i, 1] = Device.DeviceFound[i].SerialNumber;
+                }
+                var frm = new DeviceSelection(devList);
+                frm.StartPosition = FormStartPosition.CenterParent;
+                frm.ShowDialog(this);
+                Device.Open(frm.SelectedDeviceSerialNumber);
+                frm.Dispose();
+            }
+            else 
+            { 
+                Device.Open(null); 
+            }
         }
         private void Enumerate_Devices()
         {
             //Device.Enumerate();
-            Device.Open(null);
         }
         private void Connecting_Device(String ModelnSN)
         {
@@ -545,7 +680,19 @@ namespace ISC_Win_WinForm_GUI
 
         private void Device_Connected_Handler(String SerialNumber)
         {
-            isInitialization = true;
+            IsFetchingDeviceInfo = true;
+            IsFetchingDeviceInfoWithError = false;
+            FetchingDevInfoErrMsg = "";
+
+            if (SerialNumber == null)
+            {
+                ProgressWindowCompleted();
+                SDK.AutoSearch = true;
+                SDK.IsConnectionChecking = true;
+                IsFetchingDeviceInfo = false;
+                return;
+            }
+
             this.Text = AppName + string.Format("v{0}: {1} (Wavelength Range: {2} - {3}nm)",
                 this.Version,
                 Device.DevInfo.MinWavelength == 900 ? "Standard" : Device.DevInfo.MinWavelength == 1350 ? "Extended" : "Extended Plus",
@@ -681,7 +828,10 @@ namespace ISC_Win_WinForm_GUI
                     if (ActiveIndex >= 0)
                     {
                         ListBox_TargetCfgs.SelectedIndex = ActiveIndex;
-                        SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
+                        String setCfgMsg = SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
+
+                        if (setCfgMsg != "")
+                            warningMsg += "Apply active scan config failed!";
                     }
                     else if (ActiveIndex == SDK.RETURN_FAIL)
                     {
@@ -713,7 +863,6 @@ namespace ISC_Win_WinForm_GUI
             {
                 UI_Setting_Connected();
                 Chart_Refresh();
-                isInitialization = false;
                 if (userDefaultReference == ScanReference.Built_in)
                     RadioButton_RefFac.Checked = true;
                 else if (userDefaultReference == ScanReference.Previous)
@@ -722,9 +871,42 @@ namespace ISC_Win_WinForm_GUI
                     RadioButton_RefNew.Checked = true;
 
                 ProgressWindowCompleted();
+
+                // Notify user if the device is using generic coefficients
+                try
+                {
+                    if (Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[0] - std_calib_coeffs_PixelToWavelengthCoeffs_0) / std_calib_coeffs_PixelToWavelengthCoeffs_0) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[1] - std_calib_coeffs_PixelToWavelengthCoeffs_1) / std_calib_coeffs_PixelToWavelengthCoeffs_1) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[2] - std_calib_coeffs_PixelToWavelengthCoeffs_2) / std_calib_coeffs_PixelToWavelengthCoeffs_2) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[0] - std_calib_coeffs_ShiftVectorCoeffs_0) / std_calib_coeffs_ShiftVectorCoeffs_0) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[1] - std_calib_coeffs_ShiftVectorCoeffs_1) / std_calib_coeffs_ShiftVectorCoeffs_1) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[2] - std_calib_coeffs_ShiftVectorCoeffs_2) / std_calib_coeffs_ShiftVectorCoeffs_2) < calib_coeffs_diff_limit)
+                    {
+                        Message.ShowWarning("The device's coefficients seem to have problems.\n\n" +
+                            "You can try to Restore Factory Calibration Data\n" +
+                            "Or\n" +
+                            "Please contact ISC for supporting.");
+                    }
+                }
+                catch { }
+
                 if (warningMsg != String.Empty)
                     Message.ShowWarning(warningMsg);
+
+                if (IsFetchingDeviceInfoWithError) // So far only error type is connected with config errors
+                {
+                    Message.ShowError(FetchingDevInfoErrMsg, "Config Error", this);
+                    tabScanPage.SelectedIndex = 1;
+                    TargetCfg_SelIndex = ScanConfig.GetTargetActiveScanIndex();
+                    Button_CfgEdit.PerformClick();
+                    Button_CfgCancel.Enabled = false;
+                    GroupBox_CfgDetails.BackColor = Color.LightYellow;
+                    Button_CfgSave.BackColor = Color.LightYellow;
+                }
             }), null);
+            SDK.AutoSearch = true;
+            SDK.IsConnectionChecking = true;
+            IsFetchingDeviceInfo = false;
         }
         private void UI_Setting_Connected()
         {
@@ -738,7 +920,7 @@ namespace ISC_Win_WinForm_GUI
 
             UI_On_Connection();//已經連線，會開啟GUI使用     
 
-            if (isInitialization && Device.ErrStatus != 0)
+            if (IsFetchingDeviceInfo && Device.ErrStatus != 0)
             {
                 DateTime current = DateTime.Now;
                 String FileName;
@@ -750,7 +932,7 @@ namespace ISC_Win_WinForm_GUI
 
                 FileName = Path.Combine(Dir_Scan_For_New, FileName + "_Connected_Error_Found_" + current.ToString("yyyyMMdd_HHmmss") + ".csv");
 
-                FileStream fs = new FileStream(FileName, FileMode.Create);
+                FileStream fs = new FileStream(@FileName, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
@@ -799,7 +981,7 @@ namespace ISC_Win_WinForm_GUI
             }
             else
             {
-                if (isInitialization)
+                if (IsFetchingDeviceInfo)
                     groupBox_ActivationKey.Enabled = true;
 
                 //check Factory reference can backup and restore or not 
@@ -891,9 +1073,18 @@ namespace ISC_Win_WinForm_GUI
             }
 
             //init scan config list UI 
-            ListBox_LocalCfgs.BackColor = System.Drawing.Color.White;
-            ListBox_TargetCfgs.BackColor = System.Drawing.Color.AliceBlue;
-            Button_SetActive.Enabled = true;
+            if (SelCfg_IsTarget)
+            {
+                ListBox_LocalCfgs.BackColor = System.Drawing.Color.White;
+                ListBox_TargetCfgs.BackColor = System.Drawing.Color.AliceBlue;
+                Button_SetActive.Enabled = true;
+            }
+            else
+            {
+                ListBox_TargetCfgs.BackColor = System.Drawing.Color.White;
+                ListBox_LocalCfgs.BackColor = System.Drawing.Color.AliceBlue;
+                Button_SetActive.Enabled = false;
+            }
         }
         private void UpdateDeviceStatusToolTip()
         {
@@ -1049,18 +1240,12 @@ namespace ISC_Win_WinForm_GUI
             TextBox_CfgDigRes.Add(TextBox_CfgDigRes3);
             TextBox_CfgDigRes.Add(TextBox_CfgDigRes4);
             TextBox_CfgDigRes.Add(TextBox_CfgDigRes5);
-            Label_Pattern.Clear();
-            Label_Pattern.Add(label_pattern1);
-            Label_Pattern.Add(label_pattern2);
-            Label_Pattern.Add(label_pattern3);
-            Label_Pattern.Add(label_pattern4);
-            Label_Pattern.Add(label_pattern5);
-            Label_maxPattern.Clear();
-            Label_maxPattern.Add(label_maxPattern1);
-            Label_maxPattern.Add(label_maxPattern2);
-            Label_maxPattern.Add(label_maxPattern3);
-            Label_maxPattern.Add(label_maxPattern4);
-            Label_maxPattern.Add(label_maxPattern5);
+            Label_overSampleRate.Clear();
+            Label_overSampleRate.Add(label_overSampleRate1);
+            Label_overSampleRate.Add(label_overSampleRate2);
+            Label_overSampleRate.Add(label_overSampleRate3);
+            Label_overSampleRate.Add(label_overSampleRate4);
+            Label_overSampleRate.Add(label_overSampleRate5);
 
             for (Int32 i = 0; i < MAX_CFG_SECTION; i++)
             {
@@ -1125,10 +1310,8 @@ namespace ISC_Win_WinForm_GUI
                 ComboBox_CfgWidth[i].SelectedIndex = 4;
                 ComboBox_CfgExposure[i].SelectedIndex = 0;
                 TextBox_CfgDigRes[i].Clear();
-                Label_Pattern[i].Text = String.Empty;
-                Label_maxPattern[i].Text = String.Empty;
+                Label_overSampleRate[i].Text = String.Empty;
             }
-            label_totalPatterns.Text = String.Empty;
         }
         private void LoadConfigDir()
         {
@@ -1156,6 +1339,7 @@ namespace ISC_Win_WinForm_GUI
                 Dir_Scan_DataBase = Dir_Scan_For_New;
                 TextBox_SavedFileDirPath.Text = Dir_Scan_DataBase;
                 ScanFile_Formats = 0x81;
+                CSV_Delimiter = ",";
 
                 if (Directory.Exists(Dir_Scan_For_New) == false)
                 {
@@ -1172,6 +1356,7 @@ namespace ISC_Win_WinForm_GUI
                 Dir_Scan_For_New = Path.Combine(Directory.GetCurrentDirectory(), "Scan Results");
                 Dir_Scan_DataBase = Dir_Scan_For_New;
                 ScanFile_Formats = 0x81;
+                CSV_Delimiter = ",";
 
                 try
                 {
@@ -1189,20 +1374,39 @@ namespace ISC_Win_WinForm_GUI
                     XmlNode FileFormats = XmlDoc.SelectSingleNode("/Settings/FileFormats");
                     if (FileFormats.InnerText != String.Empty)
                         ScanFile_Formats = Int32.Parse(FileFormats.InnerText);
+
+                    string readDelimiter = "";
+                    XmlNode CSVDelimiter = XmlDoc.SelectSingleNode("/Settings/CSVDelimiter");
+                    if (CSVDelimiter != null)
+                    {
+                        if (FileFormats.InnerText != String.Empty)
+                            readDelimiter = CSVDelimiter.InnerText;
+                        if (readDelimiter == "TAB")
+                            CSV_Delimiter = "\t";
+                        else
+                            CSV_Delimiter = readDelimiter;
+                    }
+                    else
+                        CSV_Delimiter = ",";
                 }
                 catch (UnauthorizedAccessException UAEx) { DBG.WriteLine(UAEx.Message); logFile.Error(UAEx.Message); }
                 catch (PathTooLongException PathEx) { DBG.WriteLine(PathEx.Message); logFile.Error(PathEx.Message); }
                 catch (Exception e) { DBG.WriteLine(e.Message); logFile.Error(e.Message); }
             }
             Int32 buf_ScanFile_Formats = ScanFile_Formats;
-            CheckBox_SaveCombCSV.Checked = ((buf_ScanFile_Formats & 0x01) >> 0 == 1) ? true : false;
+            //CheckBox_SaveCombCSV.Checked = ((buf_ScanFile_Formats & 0x01) >> 0 == 1) ? true : false;
             CheckBox_SaveICSV.Checked = ((buf_ScanFile_Formats & 0x02) >> 1 == 1) ? true : false;
             CheckBox_SaveACSV.Checked = ((buf_ScanFile_Formats & 0x04) >> 2 == 1) ? true : false;
             CheckBox_SaveRCSV.Checked = ((buf_ScanFile_Formats & 0x08) >> 3 == 1) ? true : false;
             CheckBox_SaveIJDX.Checked = ((buf_ScanFile_Formats & 0x10) >> 4 == 1) ? true : false;
             CheckBox_SaveAJDX.Checked = ((buf_ScanFile_Formats & 0x20) >> 5 == 1) ? true : false;
             CheckBox_SaveRJDX.Checked = ((buf_ScanFile_Formats & 0x40) >> 6 == 1) ? true : false;
-            CheckBox_SaveDAT.Checked = ((buf_ScanFile_Formats & 0x80) >> 7 == 1) ? true : false;
+            //CheckBox_SaveDAT.Checked = ((buf_ScanFile_Formats & 0x80) >> 7 == 1) ? true : false;
+
+            if (CheckBox_SaveIJDX.Checked == true || CheckBox_SaveAJDX.Checked == true || CheckBox_SaveRJDX.Checked == true)
+                CheckBox_SaveJDX.Checked = true;
+            else if (CheckBox_SaveIJDX.Checked == false && CheckBox_SaveAJDX.Checked == false && CheckBox_SaveRJDX.Checked == false)
+                CheckBox_SaveJDX.Checked = false;
         }
         #endregion
 
@@ -1281,13 +1485,35 @@ namespace ISC_Win_WinForm_GUI
         {
             if (RadioButton_RefNew.Checked == true)
             {
+                Manual_ContScan_UI_Con(false);
                 Button_Scan.Text = "Reference Scan";
                 ReferenceSelect = Scan.SCAN_REF_TYPE.SCAN_REF_NEW;
+                CheckBox_AutoGain.Checked = true;
+                RadioButton_Intensity.Checked = true;
+                RadioButton_Reflectance.Enabled = false;
+                RadioButton_Absorbance.Enabled = false;
+                RadioButton_Reference.Enabled = false;
+                RadioButton_LampOff.Enabled = false;
+                Check_Overlay.Checked = false;
+                Check_Overlay.Enabled = false;
                 GroupBox_ContScan.Enabled = false;
+                GroupBox_SaveScan.Enabled = false;
                 CheckBox_SaveOneCSV.Enabled = false;
                 CheckBox_AverageCSV.Enabled = false;
                 checkBox_StopOnError.Enabled = false;
+                Text_ContScan.Text = "1";
+                checkBox_AutoScan.Enabled = false;
                 label_ref.Visible = false;
+                Clear_Chart();
+            }
+            else
+            {
+                GroupBox_SaveScan.Enabled = true;
+                RadioButton_Reflectance.Enabled = true;
+                RadioButton_Absorbance.Enabled = true;
+                RadioButton_Reference.Enabled = true;
+                RadioButton_LampOff.Enabled = true;
+                Check_Overlay.Enabled = true;
             }
         }
 
@@ -1296,17 +1522,26 @@ namespace ISC_Win_WinForm_GUI
         {
             if (RadioButton_RefPre.Checked == false && sender != null)
                 return;
-            else if (Scan.IsLocalRefExist)
+            else if (Scan.IsLocalReferenceExist() == SDK.RETURN_PASS)
             {
                 Scan.GetRefTime(Scan.SCAN_REF_TYPE.SCAN_REF_PREV);
                 Byte[] time = Scan.ReferenceScanDateTime;
                 if (time[0] != 0)
                 {
-                    pre_ref_time = "Previous reference last set on : 20" + time[0].ToString() + "/" + time[1].ToString() + "/" + time[2].ToString()
-                    + " @ " + time[3].ToString() + ":" + time[4].ToString() + ":" + time[5].ToString();
+                    pre_ref_time = "Previous reference was set: 20" + time[0].ToString() + "/" + time[1].ToString() + "/" + time[2].ToString()
+                    + " T " + time[3].ToString() + ":" + time[4].ToString() + ":" + time[5].ToString() + ", PGA = " + Scan.ReferencePGA.ToString();
+                    int localRefAutoPGAFlag = Scan.IsLocalRefScanAutoPGA();
+                    if (localRefAutoPGAFlag == 1)
+                        pre_ref_time += " (AutoPGA)";
+                    else if (localRefAutoPGAFlag == -1)
+                        pre_ref_time += " (FixedPGA)";
                 }
 
+                CheckBox_AutoGain.Checked = false;
+                ComboBox_PGAGain.SelectedItem = Scan.ReferencePGA.ToString();
+
                 Button_Scan.Text = "Scan";
+                Manual_ContScan_UI_Con(false);
                 ReferenceSelect = Scan.SCAN_REF_TYPE.SCAN_REF_PREV;
                 GroupBox_ContScan.Enabled = true;
                 Text_ContScan_TextChanged(null, null);
@@ -1345,7 +1580,9 @@ namespace ISC_Win_WinForm_GUI
                     return;
                 }
 
+                CheckBox_AutoGain.Checked = true;
                 Button_Scan.Text = "Scan";
+                Manual_ContScan_UI_Con(false);
                 ReferenceSelect = Scan.SCAN_REF_TYPE.SCAN_REF_BUILT_IN;
                 GroupBox_ContScan.Enabled = true;
                 Text_ContScan_TextChanged(null, null);
@@ -1381,15 +1618,21 @@ namespace ISC_Win_WinForm_GUI
 
             SetScanConfig(ScanConfig.TargetConfig[TargetCfg_SelIndex], true, TargetCfg_SelIndex);
         }
-        private void SetScanConfig(ScanConfig.SlewScanConfig Config, Boolean IsTarget, Int32 index)
+        private String SetScanConfig(ScanConfig.SlewScanConfig Config, Boolean IsTarget, Int32 index)
         {
-            isApplyingConfig = true;
-
+            String msg = "";
             ClearScanPlotsUI();
             if (ScanConfig.SetScanConfig(Config) == SDK.RETURN_FAIL)
             {
-                String text = "Device config (" + Config.head.config_name + ") is not correct, please check it again!";
-                MessageBox.Show(text, "Error");
+                if (IsFetchingDeviceInfo)
+                {
+                    msg = "Error";
+                }
+                else
+                {
+                    String text = "Device config (" + Config.head.config_name + ") is not correct, please check it again!";
+                    MessageBox.Show(text, "Error");
+                }
             }
             else
             {
@@ -1397,9 +1640,9 @@ namespace ISC_Win_WinForm_GUI
                 DevCurCfg_IsTarget = IsTarget;
 
                 if (IsTarget)
-                    Label_CurrentConfig.Text = "Device Config: " + Config.head.config_name;
+                    Label_CurrentConfig.Text = "Current Config: Device -> " + Config.head.config_name;
                 else
-                    Label_CurrentConfig.Text = "Local Config: " + Config.head.config_name;
+                    Label_CurrentConfig.Text = "Current Config: Local -> " + Config.head.config_name;
 
                 textBox_ScanAvg.Text = Config.head.num_repeats.ToString();
                 Double ScanTime = Scan.GetEstimatedScanTime();
@@ -1407,22 +1650,37 @@ namespace ISC_Win_WinForm_GUI
                     Label_EstimatedScanTime.Text = "Est. Device Scan Time: " + String.Format("{0:0.000}", ScanTime) + " secs.";
 
                 Button_Scan.Enabled = true;
-
             }
 
-            isApplyingConfig = false;
+            return msg;
         }
         private void ListBox_TargetCfgs_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (NewConfig || EditConfig) return;
+
+            int selInx = -1;
+            if (sender.GetType() == typeof(String))
+                selInx = int.Parse((string)sender);
+
             isSelectingConfig = true;
             if (NewConfig == true || EditConfig == true)
             {
                 EditConfig = false;
                 NewConfig = false;
                 Button_CfgCancel_Click(this, e);
+                return;
             }
-            TargetCfg_Last_SelIndex = TargetCfg_SelIndex;
-            TargetCfg_SelIndex = ListBox_TargetCfgs.SelectedIndex;
+            
+            if (selInx == -1)
+            {
+                TargetCfg_Last_SelIndex = TargetCfg_SelIndex;
+                TargetCfg_SelIndex = ListBox_TargetCfgs.SelectedIndex;
+            }
+            else
+            {
+                TargetCfg_SelIndex = selInx;
+            }
+
             if (TargetCfg_SelIndex < 0 || ScanConfig.TargetConfig.Count == 0)
             {
                 if (ListBox_TargetCfgs.SelectedIndex == -1 && ListBox_LocalCfgs.SelectedIndex == -1)//new config situation
@@ -1446,11 +1704,15 @@ namespace ISC_Win_WinForm_GUI
             FillCfgDetailsContent();
             OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
             // Clear target listbox index after local config data refreshed.
+            ListBox_TargetCfgs.SelectedIndexChanged -= ListBox_TargetCfgs_SelectedIndexChanged;
+            ListBox_LocalCfgs.SelectedIndexChanged -= ListBox_LocalCfgs_SelectedIndexChanged;
             if (ListBox_LocalCfgs.SelectedIndex != -1)
                 ListBox_LocalCfgs.SelectedIndex = -1;
             SetDetailColorWhite();
             isSelectingConfig = false;
             Update_Scan_Resolution_and_Pattern_Label();
+            ListBox_TargetCfgs.SelectedIndexChanged += ListBox_TargetCfgs_SelectedIndexChanged;
+            ListBox_LocalCfgs.SelectedIndexChanged += ListBox_LocalCfgs_SelectedIndexChanged;
         }
         private void ListBox_DeviceScanConfig_MouseDoubleClick(object sender, EventArgs e)
         {
@@ -1466,7 +1728,7 @@ namespace ISC_Win_WinForm_GUI
                 section = new ScanConfig.SlewScanSection[5]
             };
 
-            InitCfgDetailsContent();
+            //InitCfgDetailsContent();
             if (SelCfg_IsTarget == true)
                 CurConfig = ScanConfig.TargetConfig[TargetCfg_SelIndex];
             else
@@ -1484,15 +1746,19 @@ namespace ISC_Win_WinForm_GUI
                 ComboBox_CfgScanType[i].SelectedIndex = CurConfig.section[i].section_scan_type;
                 TextBox_CfgRangeStart[i].Text = CurConfig.section[i].wavelength_start_nm.ToString();
                 TextBox_CfgRangeEnd[i].Text = CurConfig.section[i].wavelength_end_nm.ToString();
-                ComboBox_CfgWidth[i].SelectedIndex = (Helper.CfgWidthPixelToIndex(CurConfig.section[i].width_px) > -1) ? (Helper.CfgWidthPixelToIndex(CurConfig.section[i].width_px)) : (5);
+                if (Helper.CfgWidthPixelToIndex(CurConfig.section[i].width_px) > -1)
+                    ComboBox_CfgWidth[i].SelectedIndex = Helper.CfgWidthPixelToIndex(CurConfig.section[i].width_px);
+                else
+                    ComboBox_CfgWidth[i].SelectedIndex = 5;
                 TextBox_CfgDigRes[i].Text = CurConfig.section[i].num_patterns.ToString();
                 ComboBox_CfgExposure[i].SelectedIndex = CurConfig.section[i].exposure_time;
             }
             EnableCfgItem(false);
         }
-        private void RefreshTargetCfgList()
+        private void RefreshTargetCfgList(bool IsSavingConfig = false)
         {
-            TargetCfg_SelIndex = -1;
+            if (!IsFetchingDeviceInfoWithError && !IsSavingConfig) TargetCfg_SelIndex = -1;
+
             ListBox_TargetCfgs.Items.Clear();
             if (ScanConfig.TargetConfig.Count > 0)
             {
@@ -1512,14 +1778,26 @@ namespace ISC_Win_WinForm_GUI
                 ListBox_LocalCfgs.SelectedIndex = -1;
             if (ListBox_TargetCfgs.SelectedIndex != -1)
                 ListBox_TargetCfgs.SelectedIndex = -1;
+            
+            NewConfig = true;
 
             InitCfgDetailsContent();
             EnableCfgItem(true);
-            NewConfig = true;
             comboBox_cfgNumSec.SelectedItem = "1";
             OpenCloseScanConfigButton(nameof(ScanConfigMode.NEW));
             TextBox_CfgName.Focus();
             isSelectingConfig = false;
+            ListBox_LocalCfgs.Enabled = false;
+            ListBox_TargetCfgs.Enabled = false;
+            Button_CopyCfgL2T.Enabled = false;
+            Button_CopyCfgT2L.Enabled = false;
+            Button_MoveCfgL2T.Enabled = false;
+            Button_MoveCfgT2L.Enabled = false;
+            if (SelCfg_IsTarget)
+                Button_SetActive.Enabled = true;
+            else
+                Button_SetActive.Enabled = false;
+            splitContainer1.Panel1.Enabled = false;
         }
 
         private void Button_CfgCancel_Click(object sender, EventArgs e)
@@ -1531,13 +1809,26 @@ namespace ISC_Win_WinForm_GUI
                 int bufindex = 0;
                 if (SelCfg_IsTarget == true)
                 {
-                    bufindex = TargetCfg_SelIndex;
+                    if (NewConfig)
+                    {
+                        bufindex = TargetCfg_Last_SelIndex;
+                        TargetCfg_SelIndex = TargetCfg_Last_SelIndex;
+                    }
+                    else
+                        bufindex = TargetCfg_SelIndex;
                 }
                 else
                 {
-                    bufindex = LocalCfg_SelIndex;
+                    if (NewConfig)
+                    {
+                        bufindex = LocalCfg_Last_SelIndex;
+                        LocalCfg_SelIndex = LocalCfg_Last_SelIndex;
+                    }
+                    else
+                        bufindex = LocalCfg_SelIndex;
                 }
-                InitCfgDetailsContent();
+
+                //InitCfgDetailsContent();
                 EnableCfgItem(false);
 
                 if (EditConfig)//Edit config
@@ -1552,7 +1843,6 @@ namespace ISC_Win_WinForm_GUI
                         ListBox_LocalCfgs.ClearSelected();
                         ListBox_LocalCfgs.SelectedIndex = bufindex;
                     }
-
                 }
                 else//New config
                 {
@@ -1576,44 +1866,64 @@ namespace ISC_Win_WinForm_GUI
             }
             isCancellingConfigEdit = false;
             isSelectingConfig = false;
+            ListBox_LocalCfgs.Enabled = true;
+            ListBox_TargetCfgs.Enabled = true;
+            Button_CopyCfgL2T.Enabled = true;
+            Button_CopyCfgT2L.Enabled = true;
+            Button_MoveCfgL2T.Enabled = true;
+            Button_MoveCfgT2L.Enabled = true;               
+            splitContainer1.Panel1.Enabled = true;
+
+            if (SelCfg_IsTarget == true)
+            {
+                Button_SetActive.Enabled = true;
+                ListBox_TargetCfgs_SelectedIndexChanged(sender, EventArgs.Empty);
+            }
+            else
+            {
+                Button_SetActive.Enabled = false;
+                ListBox_LocalCfgs_SelectedIndexChanged(sender, EventArgs.Empty);
+            }
+            GroupBox_CfgDetails.BackColor = TransparencyKey;
+            Button_CfgSave.BackColor = TransparencyKey;
+            Button_CfgCancel.BackColor = TransparencyKey;
         }
 
         private void Button_CfgSave_Click(object sender, EventArgs e)
         {
+            isSavingConfig = true;
             EnableCfgItem(false);
             OpenCloseScanConfigButton(nameof(ScanConfigMode.SAVE));
             if (IsCfgLegal(true) == SDK.RETURN_FAIL)
             {
                 Message.ShowError("Error configuration data can't be saved!");
                 EnableCfgItem(true);
+                EditConfig = false;
+                NewConfig = false;
+                isSelectingConfig = false;
                 return;
             }
             if (NewConfig == true)
             {
+                //NewConfig = false;
                 if (SelCfg_IsTarget && ListBox_TargetCfgs.BackColor == System.Drawing.Color.AliceBlue)
                 {
                     if (checkConfigName(false, false))//device and not edit
                     {
                         Message.ShowError("The name has exist in device list!");
                         EnableCfgItem(true);
+                        OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
                         return;
                     }
                     if (ScanConfig.TargetConfig.Count >= 20)//Confirm the current number of device configuration before saving
                     {
                         Message.ShowWarning("Number of scan configs in device cannot exceed 20.");
                         EnableCfgItem(true);
+                        //NewConfig = false;
+                        OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
                         return;
                     }
                     SaveCfgToList(true, true);//target and new
-                    NewConfig = false;
-                    if (DevCurCfg_IsTarget)
-                    {
-                        SetScanConfig(ScanConfig.TargetConfig[DevCurCfg_Index], true, DevCurCfg_Index);
-                    }
-                    else
-                    {
-                        SetScanConfig(LocalConfig[DevCurCfg_Index], false, DevCurCfg_Index);
-                    }
                 }
                 else
                 {
@@ -1621,20 +1931,24 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("The name has exist in local list!");
                         EnableCfgItem(true);
+                        //NewConfig = false;
+                        OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
                         return;
                     }
                     SaveCfgToList(false, true);//Local and new
-                    NewConfig = false;
                 }
             }
             else if (EditConfig == true)
             {
+                //EditConfig = false;
                 if (SelCfg_IsTarget == true)
                 {
                     if (checkConfigName(false, true))//device and edit
                     {
                         Message.ShowError("The name has exist in device list!");
                         EnableCfgItem(true);
+                        //EditConfig = false;
+                        OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
                         return;
                     }
                     SaveCfgToList(true, false);//target and edit
@@ -1644,7 +1958,6 @@ namespace ISC_Win_WinForm_GUI
                         ReferenceSelect = Scan.SCAN_REF_TYPE.SCAN_REF_BUILT_IN;
                         RadioButton_RefFac.PerformClick();
                     }
-                    EditConfig = false;
                 }
                 else
                 {
@@ -1652,6 +1965,8 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("The name has exist in local list!");
                         EnableCfgItem(true);
+                        //EditConfig = false;
+                        OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
                         return;
                     }
                     SaveCfgToList(false, false);//Local and edit
@@ -1661,7 +1976,6 @@ namespace ISC_Win_WinForm_GUI
                         ReferenceSelect = Scan.SCAN_REF_TYPE.SCAN_REF_BUILT_IN;
                         RadioButton_RefFac.PerformClick();
                     }
-                    EditConfig = false;
                 }
             }
             Button_CfgEdit.Enabled = true;
@@ -1669,6 +1983,104 @@ namespace ISC_Win_WinForm_GUI
             Button_CfgNew.Enabled = true;
             Button_CfgCancel.Enabled = true;
             isSelectingConfig = false;
+
+            if (DevCurCfg_IsTarget == SelCfg_IsTarget && DevCurCfg_Index == (SelCfg_IsTarget ? TargetCfg_SelIndex : LocalCfg_SelIndex))
+            {
+                if (IsFetchingDeviceInfoWithError) IsFetchingDeviceInfoWithError = false;
+                if (SelCfg_IsTarget)
+                    ListBox_TargetCfgs_MouseDoubleClick(this, null);
+                else
+                    ListBox_LocalCfgs_MouseDoubleClick(this, null);
+                Message.ShowInfo("The current config has been saved and updated for new scans.", "Configuration saved");
+                tabScanPage.SelectedIndex = 0;
+            }
+            else
+            {
+                DialogResult askForCfgApply = Message.ShowQuestion("Apply the new config for scan?", "Configuration saved");
+                if (NewConfig)
+                {
+                    if (SelCfg_IsTarget)
+                    {
+                        ListBox_TargetCfgs.SelectedIndex = ListBox_TargetCfgs.Items.Count - 1;
+                        TargetCfg_SelIndex = ListBox_TargetCfgs.SelectedIndex;
+                        if (askForCfgApply == DialogResult.Yes)
+                        {
+                            ListBox_TargetCfgs_MouseDoubleClick(this, null);
+                            tabScanPage.SelectedIndex = 0;
+                        }
+                        else
+                        {
+                            ListBox_TargetCfgs_MouseClick(this, null);
+                            ListBox_TargetCfgs_SelectedIndexChanged(this, EventArgs.Empty);
+                        }
+                    }
+                    else
+                    {
+                        ListBox_LocalCfgs.SelectedIndex = ListBox_LocalCfgs.Items.Count - 1;
+                        LocalCfg_SelIndex = ListBox_LocalCfgs.SelectedIndex;
+                        if (askForCfgApply == DialogResult.Yes)
+                        {
+                            ListBox_LocalCfgs_MouseDoubleClick(this, null);
+                            tabScanPage.SelectedIndex = 0;
+                        }
+                        else
+                        {
+                            ListBox_LocalCfgs_MouseClick(this, null);
+                            ListBox_LocalCfgs_SelectedIndexChanged(this, EventArgs.Empty);
+                        }
+                    }
+                }
+                else
+                {
+                    if (SelCfg_IsTarget)
+                    {
+                        ListBox_TargetCfgs.SelectedIndex = TargetCfg_SelIndex;
+                        if (askForCfgApply == DialogResult.Yes)
+                        {
+                            ListBox_TargetCfgs_MouseDoubleClick(this, null);
+                            tabScanPage.SelectedIndex = 0;
+                        }
+                        else
+                        {
+                            ListBox_TargetCfgs_MouseClick(this, null);
+                            ListBox_TargetCfgs_SelectedIndexChanged(this, EventArgs.Empty);
+                        }
+                    }
+                    else
+                    {
+                        ListBox_LocalCfgs.SelectedIndex = LocalCfg_SelIndex;
+                        if (askForCfgApply == DialogResult.Yes)
+                        {
+                            ListBox_LocalCfgs_MouseDoubleClick(this, null);
+                            tabScanPage.SelectedIndex = 0;
+                        }
+                        else
+                        {
+                            ListBox_LocalCfgs_MouseClick(this, null);
+                            ListBox_LocalCfgs_SelectedIndexChanged(this, EventArgs.Empty);
+                        }
+                    }
+                }
+            }
+
+            EditConfig = false;
+            NewConfig = false;
+            ListBox_LocalCfgs.Enabled = true;
+            ListBox_TargetCfgs.Enabled = true;
+            Button_CopyCfgL2T.Enabled = true;
+            Button_CopyCfgT2L.Enabled = true;
+            Button_MoveCfgL2T.Enabled = true;
+            Button_MoveCfgT2L.Enabled = true;
+            if (SelCfg_IsTarget)
+                Button_SetActive.Enabled = true;
+            else
+                Button_SetActive.Enabled = false;
+            splitContainer1.Panel1.Enabled = true;
+            GroupBox_CfgDetails.BackColor = TransparencyKey;
+            Button_CfgSave.BackColor = TransparencyKey;
+            Button_CfgCancel.BackColor = TransparencyKey;
+            OpenCloseScanConfigButton(nameof(ScanConfigMode.INITIAL));
+            isSavingConfig = false;
         }
         private Boolean checkConfigName(Boolean isLocal, Boolean isEdit)
         {
@@ -1737,8 +2149,11 @@ namespace ISC_Win_WinForm_GUI
             {
                 if (IsTarget)
                 {
+                    if (Device.DevInfo.CfgRev == 0 || Device.DevInfo.CfgRev == 255 || ScanConfig.GetTargetCfgListNum() == 0)
+                        ScanConfig.TargetConfig.Clear();
+                    
                     ScanConfig.TargetConfig.Add(CurConfig);
-                    RefreshTargetCfgList();
+                    RefreshTargetCfgList(true);
                 }
                 else
                 {
@@ -1752,7 +2167,7 @@ namespace ISC_Win_WinForm_GUI
                 {
                     ScanConfig.TargetConfig.RemoveAt(TargetCfg_SelIndex);
                     ScanConfig.TargetConfig.Insert(TargetCfg_SelIndex, CurConfig);
-                    RefreshTargetCfgList();
+                    RefreshTargetCfgList(true);
                 }
                 else
                 {
@@ -1767,7 +2182,9 @@ namespace ISC_Win_WinForm_GUI
         private void Button_CfgDelete_Click(object sender, EventArgs e)
         {
             bool multipleDelete = false;
+            bool confirmDelete = false;
             int restoreIdx = -1;
+            int origIdx = -1;
 
             SystemBusy(true);
 
@@ -1807,7 +2224,7 @@ namespace ISC_Win_WinForm_GUI
             string curCfgName;
             bool curCfgDeleted = false;
 
-            if (SelCfg_IsTarget)
+            if (DevCurCfg_IsTarget)
                 curCfgName = ScanConfig.TargetConfig[DevCurCfg_Index].head.config_name;
             else
                 curCfgName = LocalConfig[DevCurCfg_Index].head.config_name;
@@ -1819,10 +2236,8 @@ namespace ISC_Win_WinForm_GUI
                     multipleDelete = true;
                 else
                 {
-                    if (ListBox_LocalCfgs.SelectedIndex - 1 >= 0)
-                        restoreIdx = ListBox_LocalCfgs.SelectedIndex - 1;
-                    else
-                        restoreIdx = 0;
+                    origIdx = ListBox_LocalCfgs.SelectedIndex;
+                    restoreIdx = origIdx - 1 >= 0 ? origIdx - 1 : 0;
                 }
 
                 var selectedIdx = new int[ListBox_LocalCfgs.SelectedItems.Count];
@@ -1831,15 +2246,16 @@ namespace ISC_Win_WinForm_GUI
 
                 foreach (var idx in selectedIdx)
                 {
-                    if (!SelCfg_IsTarget && idx < DevCurCfg_Index)
+                    if (!DevCurCfg_IsTarget && idx < DevCurCfg_Index)
                         DevCurCfg_Index--;
 
                     var cfg = LocalConfig[idx];
-                    if (cfg.head.config_name == curCfgName)
+                    if (cfg.head.config_name == curCfgName && SelCfg_IsTarget == DevCurCfg_IsTarget)
                     {
                         string msg = "The currently using scan configuration - " +
-                            (SelCfg_IsTarget == true ? "Device: " : "Local: ") +
-                            curCfgName + " will be deleted!\n\nAre you sure?"; DialogResult ret = Message.ShowQuestion(msg, "Confirm Delete");
+                            (DevCurCfg_IsTarget == true ? "Device: " : "Local: ") +
+                            curCfgName + " will be deleted!\n\nAre you sure?"; 
+                        DialogResult ret = Message.ShowQuestion(msg, "Confirm Delete");
                         if (ret == DialogResult.No || ret == DialogResult.Cancel)
                             continue;
                         else
@@ -1849,6 +2265,7 @@ namespace ISC_Win_WinForm_GUI
                         }
                     }
                     LocalConfig.RemoveAt(idx);
+                    confirmDelete = true;
                 }
 
                 RefreshLocalCfgList();
@@ -1866,10 +2283,8 @@ namespace ISC_Win_WinForm_GUI
                     multipleDelete = true;
                 else
                 {
-                    if (ListBox_TargetCfgs.SelectedIndex - 1 >= 0)
-                        restoreIdx = ListBox_TargetCfgs.SelectedIndex - 1;
-                    else
-                        restoreIdx = 0;
+                    origIdx = ListBox_TargetCfgs.SelectedIndex;
+                    restoreIdx = origIdx - 1 >= 0 ? origIdx - 1 : 0;
                 }
 
                 int activeCfgIdx = ScanConfig.GetTargetActiveScanIndex();
@@ -1889,15 +2304,16 @@ namespace ISC_Win_WinForm_GUI
                     if (idx < activeCfgIdx)
                         delta_activeCfgIdx--;
 
-                    if (SelCfg_IsTarget && idx < DevCurCfg_Index)
+                    if (DevCurCfg_IsTarget && idx < DevCurCfg_Index)
                         DevCurCfg_Index--;
 
                     var cfg = ScanConfig.TargetConfig[idx];
-                    if (cfg.head.config_name == curCfgName)
+                    if (cfg.head.config_name == curCfgName && SelCfg_IsTarget == DevCurCfg_IsTarget)
                     {
                         string msg = "The currently using scan configuration - " +
-                            (SelCfg_IsTarget == true ? "Device: " : "Local: ") +
-                            curCfgName + " will be deleted!\n\nAre you sure?"; DialogResult ret = Message.ShowQuestion(msg, "Confirm Delete");
+                            (DevCurCfg_IsTarget == true ? "Device: " : "Local: ") +
+                            curCfgName + " will be deleted!\n\nAre you sure?"; 
+                        DialogResult ret = Message.ShowQuestion(msg, "Confirm Delete");
                         if (ret == DialogResult.No || ret == DialogResult.Cancel)
                             continue;
                         else
@@ -1907,6 +2323,7 @@ namespace ISC_Win_WinForm_GUI
                         }
                     }
                     ScanConfig.TargetConfig.RemoveAt(idx);
+                    confirmDelete = true;
                 }
 
                 if (activeCfgDeleted)
@@ -1929,6 +2346,9 @@ namespace ISC_Win_WinForm_GUI
             {
                 int ActiveIndex = ScanConfig.GetTargetActiveScanIndex();
                 SetScanConfig(ScanConfig.TargetConfig[ActiveIndex], true, ActiveIndex);
+                ListBox_TargetCfgs.SelectedIndex = ActiveIndex;
+                SelCfg_IsTarget = true;
+                DevCurCfg_IsTarget = true;
             }
             else if (ListBox_LocalCfgs.Items.Count == 0)
             {
@@ -1947,12 +2367,13 @@ namespace ISC_Win_WinForm_GUI
                 else if (ListBox_LocalCfgs.Items.Count > 0)
                     ListBox_LocalCfgs.SelectedIndex = 0;
             }
-            else if (restoreIdx >= 0)
+            else if (restoreIdx >= 0 && !curCfgDeleted)
             {
+                int selIdx = confirmDelete ? restoreIdx : origIdx;
                 if (SelCfg_IsTarget)
-                    ListBox_TargetCfgs.SelectedIndex = restoreIdx;
+                    ListBox_TargetCfgs.SelectedIndex = selIdx;
                 else if (ListBox_LocalCfgs.Items.Count > 0)
-                    ListBox_LocalCfgs.SelectedIndex = restoreIdx;
+                    ListBox_LocalCfgs.SelectedIndex = selIdx;
             }
 
             isSelectingConfig = false;
@@ -1961,6 +2382,9 @@ namespace ISC_Win_WinForm_GUI
 
         private void Button_CfgEdit_Click(object sender, EventArgs e)
         {
+            ListBox_TargetCfgs.SelectedIndexChanged -= ListBox_TargetCfgs_SelectedIndexChanged;
+            ListBox_LocalCfgs.SelectedIndexChanged -= ListBox_LocalCfgs_SelectedIndexChanged;
+
             if (SelCfg_IsTarget == true)
             {
                 if (TargetCfg_SelIndex < 0)
@@ -1985,6 +2409,17 @@ namespace ISC_Win_WinForm_GUI
             OpenCloseScanConfigButton(nameof(ScanConfigMode.EDIT));
             TextBox_CfgName.Focus();
             isSelectingConfig = false;
+            ListBox_LocalCfgs.Enabled = false;
+            ListBox_TargetCfgs.Enabled = false;
+            Button_CopyCfgL2T.Enabled = false;
+            Button_CopyCfgT2L.Enabled = false;
+            Button_MoveCfgL2T.Enabled = false;
+            Button_MoveCfgT2L.Enabled = false;
+            Button_SetActive.Enabled = false;
+            splitContainer1.Panel1.Enabled = false;
+
+            ListBox_TargetCfgs.SelectedIndexChanged += ListBox_TargetCfgs_SelectedIndexChanged;
+            ListBox_LocalCfgs.SelectedIndexChanged += ListBox_LocalCfgs_SelectedIndexChanged;
         }
 
         private static string CfgFieldPrevValue = "";
@@ -2011,7 +2446,7 @@ namespace ISC_Win_WinForm_GUI
                 var curField = (TextBox)sender;
                 CfgFieldPrevValue = curField.Text;
             }
-            else if (senderName == "ComboBox")
+            else if (senderName == "ComboBox" || senderName == "MyComboBox")
             {
                 var curField = (ComboBox)sender;
                 CfgFieldPrevValue = curField.SelectedIndex.ToString();
@@ -2027,7 +2462,7 @@ namespace ISC_Win_WinForm_GUI
                 var curField = (TextBox)sender;
                 CfgFieldPrevValue = curField.Text;
             }
-            else if (senderName == "ComboBox")
+            else if (senderName == "ComboBox" || senderName == "MyComboBox")
             {
                 var curField = (ComboBox)sender;
                 CfgFieldPrevValue = curField.SelectedIndex.ToString();
@@ -2036,7 +2471,7 @@ namespace ISC_Win_WinForm_GUI
 
         private void CfgDetails_Validated(object sender, EventArgs e)
         {
-            if (isSelectingConfig) return;
+            if (isSelectingConfig || IsFetchingDeviceInfo) return;
 
             Control nextFocus = FindFocusedControl(this);
             // Check if user want to give up the config editing
@@ -2055,6 +2490,7 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("Invalid input! Config name can not be empty.");
                         cfgField.Focus();
+                        return;
                     }
                 }
                 else if (cfgFieldName.Contains("CfgAvg"))
@@ -2065,12 +2501,21 @@ namespace ISC_Win_WinForm_GUI
                         Message.ShowError("Invalid input! Number average should be integer.");
                         cfgField.Text = CfgFieldPrevValue == "" ? "6" : CfgFieldPrevValue;
                         cfgField.Focus();
+                        return;
+                    }
+                    else if (numAvg == 0)
+                    {
+                        Message.ShowError("Invalid input! Number average is Zero.");
+                        cfgField.Text = "1";
+                        cfgField.Focus();
+                        return;
                     }
                     else if (numAvg > 255)
                     {
                         Message.ShowError("Invalid input! Number average is too large.");
                         cfgField.Text = "255";
                         cfgField.Focus();
+                        return;
                     }
                 }
                 else if (cfgFieldName.Contains("CfgRangeStart"))
@@ -2080,21 +2525,21 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("Invalid input! Wavelength start should be integer.");
                         cfgField.Text = CfgFieldPrevValue == "" ? Device.DevInfo.MinWavelength.ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                     else if (rangeStart > Device.DevInfo.MaxWavelength - 50)
                     {
                         String errMsg = "Invalid input! Wavelength start should be less than " + (Device.DevInfo.MaxWavelength - 50).ToString();
                         Message.ShowError(errMsg);
                         cfgField.Text = CfgFieldPrevValue == "" ? (Device.DevInfo.MaxWavelength - 50).ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                     else if (rangeStart < Device.DevInfo.MinWavelength)
                     {
                         String errMsg = "Invalid input! Wavelength start should be greater than " + Device.DevInfo.MinWavelength.ToString();
                         Message.ShowError(errMsg);
                         cfgField.Text = CfgFieldPrevValue == "" ? Device.DevInfo.MinWavelength.ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                 }
                 else if (cfgFieldName.Contains("CfgRangeEnd"))
@@ -2104,21 +2549,21 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("Invalid input! Wavelength end should be integer.");
                         cfgField.Text = CfgFieldPrevValue == "" ? Device.DevInfo.MaxWavelength.ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                     else if (rangeEnd > Device.DevInfo.MaxWavelength)
                     {
                         String errMsg = "Invalid input! Wavelength end should be less than " + Device.DevInfo.MaxWavelength.ToString();
                         Message.ShowError(errMsg);
                         cfgField.Text = CfgFieldPrevValue == "" ? Device.DevInfo.MaxWavelength.ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                     else if (rangeEnd < Device.DevInfo.MinWavelength + 50)
                     {
                         String errMsg = "Invalid input! Wavelength end should be greater than " + (Device.DevInfo.MinWavelength + 50).ToString();
                         Message.ShowError(errMsg);
                         cfgField.Text = CfgFieldPrevValue == "" ? (Device.DevInfo.MinWavelength + 50).ToString() : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                 }
                 else if (cfgFieldName.Contains("CfgDigRes"))
@@ -2128,13 +2573,13 @@ namespace ISC_Win_WinForm_GUI
                     {
                         Message.ShowError("Invalid input! Digital resolution should be integer.");
                         cfgField.Text = CfgFieldPrevValue == "" ? "3" : CfgFieldPrevValue;
-                        cfgField.Focus();
+                        return;
                     }
                     else if (digiRes < 3)
                     {
                         Message.ShowError("Invalid input! Minimum digital resolution should be equal or greater than 3.");
                         cfgField.Text = CfgFieldPrevValue == "" ? CfgFieldPrevValue == "" ? "3" : CfgFieldPrevValue : "3";
-                        cfgField.Focus();
+                        return;
                     }
                 }
 
@@ -2150,16 +2595,16 @@ namespace ISC_Win_WinForm_GUI
                         patLimit = int.Parse(cfgField.Text) - patDiff + prevSet;
 
                     cfgField.Text = patLimit.ToString();
-                    cfgField.Focus();
                     Message.ShowError("Exceed total scan patterns limit! The max number of total patterns is 624.");
                     Update_Scan_Resolution_and_Pattern_Label(); // Refresh the UI
+                    return;
                 }
                 if (nextFocus.Name != cfgField.Name)
                     CfgFieldPrevValue = "";
                 else
                     CfgFieldPrevValue = cfgField.Text;
             }
-            else if (senderName == "ComboBox")
+            else if (senderName == "ComboBox" || senderName == "MyComboBox")
             {
                 var cfgField = (ComboBox)sender;
                 int totalPatterns = Update_Scan_Resolution_and_Pattern_Label();
@@ -2167,7 +2612,7 @@ namespace ISC_Win_WinForm_GUI
                 {
                     Message.ShowError("Exceed total scan patterns limit! The max number of total patterns is 624.");
                     cfgField.SelectedIndex = int.Parse(CfgFieldPrevValue);
-                    cfgField.Focus();
+                    return;
                 }
                 if (nextFocus.Name != cfgField.Name)
                     CfgFieldPrevValue = "";
@@ -2181,22 +2626,51 @@ namespace ISC_Win_WinForm_GUI
             int num_sections = int.Parse(comboBox_cfgNumSec.SelectedItem.ToString());
             int total_patterns = 0;
             PrevTotalPatternUsed = TotalPatternUsed;
+            ushort rangeStart, rangeEnd, numPat;
+            string msg = "";
+
             for (int i = 0; i < num_sections; i++)
             {
-                Int32 PatternUsed = 0;
-                Int32 MaxResolution = 0;
-                ushort rangeStart, rangeEnd, numPat;
-
                 if (!ushort.TryParse(TextBox_CfgRangeStart[i].Text, out rangeStart) || !ushort.TryParse(TextBox_CfgRangeEnd[i].Text, out rangeEnd))
                     break;
                 if (rangeStart >= rangeEnd)
                 {
-                    Message.ShowError("Invalid input! Wavelength start should be less than wavelength end.");
-                    TextBox_CfgRangeStart[i].Focus();
+                    for (int j = 0; j < MAX_CFG_SECTION; j++)
+                        Label_overSampleRate[j].Visible = false;
+                    msg = String.Format("Start wavelength should be smaller than end wavelength");
+                    Message.ShowError(msg);
                     return -1;
                 }
-                if (rangeStart >= Device.DevInfo.MinWavelength && rangeEnd <= Device.DevInfo.MaxWavelength)
+                if (rangeStart < Device.DevInfo.MinWavelength || rangeEnd > Device.DevInfo.MaxWavelength)
                 {
+                    for (int j = 0; j < MAX_CFG_SECTION; j++)
+                        Label_overSampleRate[j].Visible = false;
+                    Button_CfgEdit.Enabled = false;
+                    msg = String.Format("Wavelength range is not applicable to the connected device!");
+                    Message.ShowError(msg);
+                    return -1;
+                }
+            }
+
+            for (int i = 0; i < num_sections; i++)
+            {
+                Int32 PatternUsed = 0;
+                Int32 MaxResolution = 0;
+
+                Label_overSampleRate[i].Visible = true;
+
+                //if (!ushort.TryParse(TextBox_CfgRangeStart[i].Text, out rangeStart) || !ushort.TryParse(TextBox_CfgRangeEnd[i].Text, out rangeEnd))
+                //    break;
+                //if (rangeStart >= rangeEnd)
+                //{
+                //    return -1;
+                //}
+
+                ushort.TryParse(TextBox_CfgRangeStart[i].Text, out rangeStart);
+                ushort.TryParse(TextBox_CfgRangeEnd[i].Text, out rangeEnd);
+
+                //if (rangeStart >= Device.DevInfo.MinWavelength && rangeEnd <= Device.DevInfo.MaxWavelength)
+                //{
                     ScanConfig.SlewScanConfig cfg = new ScanConfig.SlewScanConfig
                     {
                         section = new ScanConfig.SlewScanSection[5]
@@ -2208,19 +2682,90 @@ namespace ISC_Win_WinForm_GUI
                     cfg.section[0].width_px = (Byte)Helper.CfgWidthIndexToPixel(ComboBox_CfgWidth[i].SelectedIndex);
 
                     MaxResolution = ScanConfig.GetMaxResolutions(cfg, 0);
-                    Label_maxPattern[i].Text = MaxResolution.ToString();
+                    int patWidth = 0;
+                    double baseOverSampleRate = 0.0;
+                    if (Con_OneNM_PixWidth.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                    {
+                        patWidth = (int)Math.Ceiling(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex));
+                        baseOverSampleRate = (double)(Math.Ceiling((double)(rangeEnd - rangeStart) / patWidth));
+                    }
+                    else
+                    {
+                        patWidth = (int)Math.Floor(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex));
+                        baseOverSampleRate = (double)(Math.Floor((double)(rangeEnd - rangeStart) / patWidth));
+                    }
 
                     if (ushort.TryParse(TextBox_CfgDigRes[i].Text, out numPat) && numPat != 0)
                     {
-                        if (numPat > MaxResolution)
+                        string s = TextBox_CfgDigRes[i].Text;
+                        int inputDigitalResolution = (int.Parse(s));
+                        double overSampleRate = 0.0;
+                        if (Con_OneNM_PixWidth.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                            overSampleRate = (double)inputDigitalResolution / Math.Floor((double)(rangeEnd - rangeStart) / Math.Ceiling(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex)));
+                        else
+                            overSampleRate = (double)inputDigitalResolution / Math.Floor((double)(rangeEnd - rangeStart) / Math.Floor(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex)));
+
+                        if ((numPat > MaxResolution) || (numPat > Math.Floor(baseOverSampleRate * 4.5)))
                         {
-                            cfg.section[0].num_patterns = (ushort)MaxResolution;
-                            Message.ShowError("Exceed the section max resolution!");
-                            TextBox_CfgDigRes[i].Text = MaxResolution.ToString();
-                            numPat = (ushort)MaxResolution;
+                            if ((int)Math.Floor(baseOverSampleRate * 4.5) > MaxResolution)
+                            {
+                                msg = String.Format("Exceed the section max resolution! (max = {0})", MaxResolution);
+                                numPat = (ushort)MaxResolution;
+                                cfg.section[0].num_patterns = (ushort)numPat;
+                                if (Con_OneNM_PixWidth.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                                    overSampleRate = (double)(numPat / Math.Floor((double)(rangeEnd - rangeStart) / Math.Ceiling(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex))));
+                                else
+                                    overSampleRate = (double)(numPat / Math.Floor((double)(rangeEnd - rangeStart) / Math.Floor(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex))));
+                            }
+                            else
+                            {
+                                msg = String.Format("Exceed the max oversampling rate! (max = 4.5, set = {0:F1}x)", overSampleRate);
+                                numPat = (ushort)Math.Floor(baseOverSampleRate * 4.5);
+                                cfg.section[0].num_patterns = (ushort)numPat;
+                                if (Con_OneNM_PixWidth.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                                    overSampleRate = (double)(numPat / Math.Floor((double)(rangeEnd - rangeStart) / Math.Ceiling(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex))));
+                                else
+                                    overSampleRate = (double)(numPat / Math.Floor((double)(rangeEnd - rangeStart) / Math.Floor(Helper.CfgWidthIndexToNM(ComboBox_CfgWidth[i].SelectedIndex))));
+                            }
+                            if (!IsFetchingDeviceInfo)
+                            {
+                                Message.ShowError(msg);
+                                Button_CfgEdit.PerformClick();
+                                Button_CfgCancel.Enabled = false;
+                                Button_CfgNew.Enabled = false;
+                                GroupBox_CfgDetails.BackColor = Color.LightYellow;
+                                Button_CfgSave.BackColor = Color.LightYellow;
+                                Button_CfgCancel.BackColor = Color.LightYellow;
+                            }
+                            else
+                            {
+                                IsFetchingDeviceInfoWithError = true;
+                                FetchingDevInfoErrMsg = msg;
+                            }
+                        }
+
+                        overSampleRate = Math.Round(overSampleRate, 1);
+
+                        if ((overSampleRate > 3 || overSampleRate < 2) && patWidth > 7)
+                        {
+                            int upperLimit = (int)baseOverSampleRate * 3;
+                            upperLimit = upperLimit > MaxResolution ? MaxResolution : upperLimit;
+                            Label_overSampleRate[i].ForeColor = Color.Red;
+                            toolTip1.SetToolTip(Label_overSampleRate[i], String.Format("The recommended oversampling is between 2.0 ~ 3.0 for this pattern width setting\ni.e. Digital resolution should be between {0:F0} ~ {1:F0}", baseOverSampleRate * 2, upperLimit));
+                        }
+                        else if (overSampleRate < 2 && patWidth > 4 && patWidth < 8)
+                        {
+                            Label_overSampleRate[i].ForeColor = Color.Red;
+                            toolTip1.SetToolTip(Label_overSampleRate[i], String.Format("The recommended oversampling is above 2.0 for this pattern width setting\ni.e. Digital resolution should be between {0:F0} ~ {1:F0}", baseOverSampleRate * 2, MaxResolution));
                         }
                         else
-                            cfg.section[0].num_patterns = numPat;
+                        {
+                            Label_overSampleRate[i].ForeColor = Color.Blue;
+                            toolTip1.SetToolTip(Label_overSampleRate[i], "");
+                        }
+
+                        Label_overSampleRate[i].Text = overSampleRate.ToString("F1");
+                        TextBox_CfgDigRes[i].Text = numPat.ToString();
 
                         if (cfg.section[0].section_scan_type > 0)
                             PatternUsed = ScanConfig.GetHadamardUsedPatterns(cfg, 0);
@@ -2229,14 +2774,8 @@ namespace ISC_Win_WinForm_GUI
 
                         total_patterns += PatternUsed;
                     }
-                }
-                Label_Pattern[i].Text = PatternUsed.ToString();
+                //}
             }
-            label_totalPatterns.Text = total_patterns.ToString();
-            if (int.Parse(label_totalPatterns.Text) > 624)
-                label_totalPatterns.ForeColor = System.Drawing.Color.FromKnownColor(System.Drawing.KnownColor.Red);
-            else
-                label_totalPatterns.ForeColor = System.Drawing.Color.FromKnownColor(System.Drawing.KnownColor.MidnightBlue);
             TotalPatternUsed = total_patterns;
             return total_patterns;
         }
@@ -2255,7 +2794,7 @@ namespace ISC_Win_WinForm_GUI
                     ComboBox_CfgWidth[i].Visible = true;
                     TextBox_CfgDigRes[i].Visible = true;
                     ComboBox_CfgExposure[i].Visible = true;
-                    Label_Pattern[i].Visible = true;
+                    Label_overSampleRate[i].Visible = true;
                 }
                 else
                 {
@@ -2265,7 +2804,7 @@ namespace ISC_Win_WinForm_GUI
                     ComboBox_CfgWidth[i].Visible = false;
                     TextBox_CfgDigRes[i].Visible = false;
                     ComboBox_CfgExposure[i].Visible = false;
-                    Label_Pattern[i].Visible = false;
+                    Label_overSampleRate[i].Visible = false;
                 }
             }
         }
@@ -2376,12 +2915,10 @@ namespace ISC_Win_WinForm_GUI
                 }
                 if (HadPattern != -1)
                 {
-                    Label_Pattern[i].Text = HadPattern.ToString();// + "/" + MaxPattern.ToString();
                     TotalPatterns += HadPattern;
                 }
                 else
                 {
-                    Label_Pattern[i].Text = CurConfig.section[i].num_patterns.ToString();// + "/" + MaxPattern.ToString();
                     TotalPatterns += CurConfig.section[i].num_patterns;
                 }
 
@@ -2597,78 +3134,44 @@ namespace ISC_Win_WinForm_GUI
         {
             return (source.IndexOf(value, comparisonType) >= 0);
         }
-
-        private void SavedScan_RefreshSelectAllCheckBox()
-        {
-            // Calculate selected checkboxes to update select all checkbox
-            int checkCounts = 0;
-            foreach (DataGridViewRow row in dataGridView_savescan.Rows)
-                checkCounts += Convert.ToInt32(row.Cells["Select"].Value);
-            try
-            {
-                CheckBox headerBox = (CheckBox)dataGridView_savescan.Controls["SelectAll"];
-                if (checkCounts == dataGridView_savescan.Rows.Count && checkCounts > 0)
-                    headerBox.Checked = true;
-                else
-                    headerBox.Checked = false;
-            }
-            catch { }
-        }
-
+        
         private void SavedScan_RefreshDataGridView()
         {
-            try
+            SavedScanList.Clear();
+
+            bindingSavedScanList = new BindingList<SavedScanData>(SavedScanList);
+            var source = new BindingSource(bindingSavedScanList, null);
+            dataGridView_savescan.DataSource = source;
+            dataGridView_savescan.Columns[0].HeaderText = "";
+            dataGridView_savescan.Columns[1].HeaderText = "File Name";
+            dataGridView_savescan.Columns[2].HeaderText = "Time Stamp";
+
+            if (SavedScanFileList.Count > 0)
             {
-                DataTable dt = new DataTable();
-                dt.Columns.Add(new DataColumn("Select", typeof(bool)));
-                dt.Columns.Add(new DataColumn("FileName", typeof(string)));
-                dt.Columns.Add(new DataColumn("Time", typeof(DateTime)));
-
-                if (SavedScanFileList.Count > 0)
+                bool nameFilter = !string.IsNullOrEmpty(textBox_filter.Text);
+                for (int i = 0; i < SavedScanFileList.Count; i++)
                 {
-                    bool nameFilter = !string.IsNullOrEmpty(textBox_filter.Text);
-                    int index = 0;
-                    for (int i = 0; i < SavedScanFileList.Count; i++)
+                    SavedScanData data = new SavedScanData();
+                    if ((RadioButton_SavedScanSelCsv.Checked && StringContains(SavedScanFileList[i], ".csv", StringComparison.OrdinalIgnoreCase) && StringContains(SavedScanFileList[i].Substring(0, SavedScanFileList[i].Length - 4), textBox_filter.Text, StringComparison.OrdinalIgnoreCase)) ||
+                        (RadioButton_SavedScanSelDat.Checked && StringContains(SavedScanFileList[i], ".dat", StringComparison.OrdinalIgnoreCase) && StringContains(SavedScanFileList[i].Substring(0, SavedScanFileList[i].Length - 4), textBox_filter.Text, StringComparison.OrdinalIgnoreCase)))
                     {
-                        bool csvFilter = RadioButton_SavedScanSelCsv.Checked ? StringContains(SavedScanFileList[i], ".csv", StringComparison.OrdinalIgnoreCase) : false;
-                        bool datFilter = RadioButton_SavedScanSelDat.Checked ? StringContains(SavedScanFileList[i], ".dat", StringComparison.OrdinalIgnoreCase) : false;
-
-                        if ((csvFilter && !nameFilter) ||
-                            (csvFilter && nameFilter && StringContains(SavedScanFileList[i], textBox_filter.Text, StringComparison.OrdinalIgnoreCase)) ||
-                            (datFilter && !nameFilter) ||
-                            (datFilter && nameFilter && StringContains(SavedScanFileList[i], textBox_filter.Text, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            index++;
-
-                            DataRow dr;
-                            dr = dt.NewRow();
-                            dr["Select"] = SavedScanSelectList[i];
-                            dr["FileName"] = SavedScanFileList[i];
-                            dr["Time"] = SavedScanFileTimeList[i];
-                            dt.Rows.Add(dr);
-                        }
+                        data.Select = SavedScanSelectList[i];
+                        data.FileName = SavedScanFileList[i];
+                        data.TimeStamp = SavedScanFileTimeList[i];
+                        SavedScanList.Add(data);
                     }
                 }
-
-                totalScan.Text = "Total: " + dt.Rows.Count;
-
-                DataView dv = dt.DefaultView;
-                dv.Sort = "Time DESC";  // Descending sort by Time column
-                dt = dv.ToTable();
-
-                dataGridView_savescan.DataSource = dt;
-                dataGridView_savescan.Columns["Select"].HeaderText = "";
-                dataGridView_savescan.Columns["Select"].Resizable = DataGridViewTriState.False;
-                dataGridView_savescan.Columns["Select"].Width = 25;
-                dataGridView_savescan.Columns["FileName"].Width = 180;
-                dataGridView_savescan.Columns["Time"].Width = 130;
-                dt.Dispose();
-                SavedScan_RefreshSelectAllCheckBox();
             }
-            catch (Exception e)
-            {
-                Message.ShowError("Refresh saved scan data failed!\n(" + e.Message + ")");
-            }
+
+            foreach (DataGridViewColumn col in dataGridView_savescan.Columns)
+                col.SortMode = DataGridViewColumnSortMode.Programmatic;
+
+            dataGridViewSort("TimeStamp", SortOrder.Descending);
+            dataGridView_savescan.Columns[2].HeaderCell.SortGlyphDirection = SortOrder.Descending;
+
+            if (dataGridView_savescan.RowCount > 0)
+                foreach (DataGridViewRow row in dataGridView_savescan.Rows)
+                    dataGridView_savescan.AutoResizeRow(row.Index, DataGridViewAutoSizeRowMode.AllCellsExceptHeader);
         }
 
         private void Button_DisplayDirChange_Click(object sender, EventArgs e)
@@ -2705,38 +3208,14 @@ namespace ISC_Win_WinForm_GUI
 
         private void RadioButton_SavedScanSelCsv_CheckedChanged(object sender, EventArgs e)
         {
-            SavedScan_RefreshDataGridView();
+            if (RadioButton_SavedScanSelCsv.Checked)
+                SavedScan_RefreshDataGridView();
         }
 
         private void RadioButton_SavedScanSelDat_CheckedChanged(object sender, EventArgs e)
         {
-            SavedScan_RefreshDataGridView();
-        }
-
-        private void dataGridView_savescan_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex == -1)
-                return;
-
-            if (dataGridView_savescan.Columns[e.ColumnIndex].Name == "Select")
-            {
-                // Switch current selected cell checkbox
-                bool isSelected = Convert.ToBoolean(dataGridView_savescan.Rows[e.RowIndex].Cells["Select"].Value);
-                dataGridView_savescan.Rows[e.RowIndex].Cells["Select"].Value = !isSelected;
-
-                SavedScan_RefreshSelectAllCheckBox();
-
-                // Update to saved scan file list
-                string fileName = dataGridView_savescan.Rows[e.RowIndex].Cells["FileName"].Value.ToString();
-                for (int i = 0; i < SavedScanFileList.Count; i++)
-                {
-                    if (StringContains(SavedScanFileList[i], fileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        SavedScanSelectList[i] = !SavedScanSelectList[i];
-                        break;
-                    }
-                }
-            }
+            if (RadioButton_SavedScanSelDat.Checked)
+                SavedScan_RefreshDataGridView();
         }
 
         private void dataGridView_savescan_KeyDown(object sender, KeyEventArgs e)
@@ -2752,13 +3231,14 @@ namespace ISC_Win_WinForm_GUI
 
             String item = dataGridView_savescan.Rows[dataGridView_savescan.SelectedRows[0].Index].Cells["FileName"].Value.ToString();
 
+            DataGridView.HitTestInfo hitSelectedCell = dataGridView_savescan.HitTest(e.X, e.Y);
+
             if (e != null && e.Button == MouseButtons.Right)
             {
                 int currentMouseOverRow = dataGridView_savescan.HitTest(e.X, e.Y).RowIndex;
                 if (currentMouseOverRow < 0)
                     return;
 
-                dataGridView_savescan.Rows[currentMouseOverRow].Selected = true;
                 ContextMenuStrip m = new ContextMenuStrip();
                 m.Items.Add("Delete");
                 if (RadioButton_SavedScanSelDat.Checked && item.Contains(".dat"))
@@ -2767,15 +3247,33 @@ namespace ISC_Win_WinForm_GUI
                 m.ItemClicked += new ToolStripItemClickedEventHandler(dataGridView_savescan_contexMenu_ItemClicked);
                 m.Show(dataGridView_savescan, new Point(e.X, e.Y));
             }
-            else
+            else if (hitSelectedCell.Type == DataGridViewHitTestType.Cell)
             {
                 String FileName = Path.Combine(TextBox_SavedFileDirPath.Text, item);
+                bool fileExisted = File.Exists(FileName);
+                if (!fileExisted)
+                {
+                    String text = "The select file was not existed!\nThe file list will be refeshed.";
+                    btn_FileListRefresh_Click(this, null);
+                    Message.ShowError(text);
+                    return;
+                }
+
+                if (IsFileLocked(FileName))
+                {
+                    DBG.WriteLine("File locked!");
+                    logFile.Error("File locked!");
+                    String text = "The file can not be opened due to it is in use by another process!";
+                    Message.ShowWarning(text);
+                    return;
+                }
 
                 // Read scan result and populate to the buffer
                 if (item.Contains(".dat") && Scan.ReadScanResultFromBinFile(FileName) == SDK.RETURN_FAIL)
                 {
                     DBG.WriteLine("Read *.dat file failed!");
                     logFile.Error("Read *.dat file failed!");
+                    dataGridView_savescan.Rows[dataGridView_savescan.CurrentCell.RowIndex].Cells["Select"].Value = false;
                     String text = "Read *.dat file failed!\nThis file may not match the format!";
                     Message.ShowWarning(text);
                     return;
@@ -2784,15 +3282,55 @@ namespace ISC_Win_WinForm_GUI
                 {
                     DBG.WriteLine("Read *.csv file failed!");
                     logFile.Error("Read *.csv file failed!");
-                    String text = "Read *.csv file failed!\nThis file may not match the format!";
+                    dataGridView_savescan.Rows[dataGridView_savescan.CurrentCell.RowIndex].Cells["Select"].Value = false;
+                    String text = "Read *.csv file failed!\nThis file may not match the supported formats!";
                     Message.ShowWarning(text);
                     return;
                 }
 
-                Scan.GetScanResult();
+                if (dataGridView_savescan.Columns[hitSelectedCell.ColumnIndex].Name == "Select")// && !SelectNone)
+                {
+                    if ((bool)dataGridView_savescan.CurrentCell.Value == true)
+                    {
+                        String selectTitle = (String)dataGridView_savescan.Rows[dataGridView_savescan.CurrentCell.RowIndex].Cells["FileName"].Value;
+                        selectTitle = selectTitle.Substring(0, selectTitle.LastIndexOf("."));
+
+                        ChartData_RefIntensity.RemoveAll(x => x.Title == selectTitle);
+                        ChartData_Intensity.RemoveAll(x => x.Title == selectTitle);
+                        ChartData_Absorbance.RemoveAll(x => x.Title == selectTitle);
+                        ChartData_Reflectance.RemoveAll(x => x.Title == selectTitle);
+                        dataGridView_savescan.CurrentCell.Value = false;
+                        RadioButton_SpectrumData_CheckedChanged(null, null);
+                        return;
+                    }
+                    else
+                    {
+                        Check_Overlay.Checked = true;
+                        dataGridView_savescan.CurrentCell.Value = true;
+                        SelectScanFileName = item.Substring(0, item.LastIndexOf("."));
+                    }
+                }
+                else
+                {
+                    dataGridView_savescan.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.EnableResizing;
+                    // or even better, use .DisableResizing. Most time consuming enum is DataGridViewRowHeadersWidthSizeMode.AutoSizeToAllHeaders
+
+                    Clear_Chart(true);
+
+                    // set it to false if not needed
+                    dataGridView_savescan.RowHeadersVisible = false;
+                    foreach (DataGridViewRow row in dataGridView_savescan.Rows)
+                    {
+                        row.Cells["Select"].Value = false;
+                    }
+                    dataGridView_savescan.Rows[hitSelectedCell.RowIndex].Cells["Select"].Value = true;
+                    SelectScanFileName = item.Substring(0, item.LastIndexOf("."));
+                }
+
+                Scan.GetScanResult(IsSavedScanData);
 
                 // Draw the scan result
-                SpectrumPlot(false);
+                SpectrumPlot();
 
                 // Populate config data
                 ClearSavedScanCfgItems();
@@ -2802,19 +3340,30 @@ namespace ISC_Win_WinForm_GUI
                     Label_SavedScanType[i].Text = Helper.ScanTypeIndexToMode(Scan.ScanConfigData.section[i].section_scan_type).Substring(0, 3);
                     Label_SavedRangeStart[i].Text = Scan.ScanConfigData.section[i].wavelength_start_nm.ToString();
                     Label_SavedRangeEnd[i].Text = Scan.ScanConfigData.section[i].wavelength_end_nm.ToString();
-                    Label_SavedWidth[i].Text = Math.Round(Helper.CfgWidthPixelToNM(Scan.ScanConfigData.section[i].width_px), 2).ToString();
+                    Label_SavedWidth[i].Text = Math.Round(Helper.CfgWidthPixelToNM(Scan.ScanConfigData.section[i].width_px, true), 2).ToString();
                     Label_SavedDigRes[i].Text = Scan.ScanConfigData.section[i].num_patterns.ToString();
                     Label_SavedExposure[i].Text = Helper.CfgExpIndexToTime(Scan.ScanConfigData.section[i].exposure_time).ToString();
                 }
                 Label_SavedAvg.Text = Scan.ScanConfigData.head.num_repeats.ToString();
-
-                // Need reading device information again after the file read.
-                if (Device.IsConnected() && Device.Information() != 0)
-                {
-                    DBG.WriteLine("Device Information read failed!");
-                    logFile.Error("Device Information read failed!");
-                }
             }
+        }
+
+        private void dataGridView_savescan_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            DataGridView gdv = (DataGridView)sender;
+            SortOrder so = SortOrder.None;
+
+            if (gdv.Columns[e.ColumnIndex].Name == "Select")
+                return;
+
+            if (gdv.Columns[e.ColumnIndex].HeaderCell.SortGlyphDirection == SortOrder.None ||
+                gdv.Columns[e.ColumnIndex].HeaderCell.SortGlyphDirection == SortOrder.Ascending)
+                so = SortOrder.Descending;
+            else
+                so = SortOrder.Ascending;
+
+            dataGridViewSort(gdv.Columns[e.ColumnIndex].Name, so);
+            gdv.Columns[e.ColumnIndex].HeaderCell.SortGlyphDirection = so;
         }
 
         private void SavedScan_DeleteItems()
@@ -2828,8 +3377,7 @@ namespace ISC_Win_WinForm_GUI
             }
             if (selFile.Count == 0)
             {
-                Message.ShowError("No selected files need to be deleted.");
-                return;
+                selFile.Add(dataGridView_savescan.Rows[dataGridView_savescan.CurrentCell.RowIndex].Cells["FileName"].Value.ToString());
             }
 
             for (int i = 0; i < selFile.Count; i++)
@@ -2911,15 +3459,15 @@ namespace ISC_Win_WinForm_GUI
                         return;
                     }
 
-                    Scan.GetScanResult();
-                    FileStream fs = new FileStream(csvFileName, FileMode.Create);
+                    Scan.GetScanResult(IsSavedScanData);
+                    FileStream fs = new FileStream(@csvFileName, FileMode.Create);
                     StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
-                    SaveHeader(sw, false);
+                    SaveHeader(sw, false, true);
 
                     sw.WriteLine("Wavelength (nm),Absorbance (AU),Reference Signal (unitless),Sample Signal (unitless)");
                     for (int j = 0; j < Scan.ScanDataLen; j++)
                     {
-                        sw.WriteLine(Scan.WaveLength[j] + "," + Scan.Absorbance[j] + "," + Scan.ReferenceIntensity[j] + "," + Scan.Intensity[j]);
+                        sw.WriteLine(Scan.WaveLength[j] + CSV_Delimiter + Scan.Absorbance[j] + CSV_Delimiter + Scan.ReferenceIntensity[j] + CSV_Delimiter + Scan.Intensity[j]);
                     }
 
                     sw.Flush();  // Clear buffer
@@ -2965,6 +3513,13 @@ namespace ISC_Win_WinForm_GUI
             for (int i = 0; i < selFile.Count; i++)
             {
                 String FileName = Path.Combine(TextBox_SavedFileDirPath.Text, selFile[i]);
+                
+                if (IsFileLocked(FileName))
+                {
+                    DBG.WriteLine("File locked!");
+                    logFile.Error("File locked!");
+                    continue;
+                }
 
                 // Read scan result and populate to the buffer
                 if (selFile[i].Contains(".dat") && Scan.ReadScanResultFromBinFile(FileName) == SDK.RETURN_FAIL)
@@ -2985,7 +3540,7 @@ namespace ISC_Win_WinForm_GUI
                 }
 
                 ScannedCounts++;
-                Scan.GetScanResult();
+                Scan.GetScanResult(IsSavedScanData);
                 SaveToAverageCSV(FileName);
             }
 
@@ -3039,22 +3594,22 @@ namespace ISC_Win_WinForm_GUI
             RadioButton_Intensity.Checked = true;
             MyChart.DataTooltip = null;
             MyChart.Zoom = ZoomingOptions.None;
-            MyChart.DataTooltip = null;
-            MyChart.Zoom = ZoomingOptions.None;
+            MyChart.DisableAnimations = true;
         }
-        private void SpectrumPlot(bool updateAxis)
+        private void SpectrumPlot()
         {
+            if (tabScanPage.SelectedIndex == 2 && Button_Scan.Text == "Reference Scan" && !IsSavedScanData)
+                return;
+
             if (MyChart.Series.Count > 0)
             {
-                if (MyChart.Series[0].Values.Count == 0)
-                    updateAxis = true;
                 if (!Check_Overlay.Checked)
-                    MyChart.Series.Clear();
+                    Clear_Chart();
                 else
                 {
                     if (TargetScanCounts > 1 && ScannedCounts == 1)  //做continuous scan,掃描第一次要移除之前的serious,Y軸的圖才會有精確度 
                     {
-                        MyChart.Series.Clear();
+                        Clear_Chart();
                     }
                     else if (MyChart.Series[0].Values.Count == 0)
                     {
@@ -3066,14 +3621,184 @@ namespace ISC_Win_WinForm_GUI
             double[] valY = new double[Scan.ScanDataLen];
             double[] valX = new double[Scan.ScanDataLen];
             int dataCount = 0;
-            string label = "";
-            valX = Scan.WaveLength.ToArray();
+            valX = Scan.WaveLength.Select(d => Math.Round(d, 2, MidpointRounding.AwayFromZero)).ToArray();
             bool dataValid = false;
 
-            if ((bool)RadioButton_Intensity.Checked == true)
+            String scanFileName = "";
+            if (Button_Scan.Text != "Reference Scan")
+                scanFileName = Path.GetFileName(CurrentScanFileName);
+            else
+                scanFileName = "Local Reference";
+
+            if (Scan.ScanConfigData.head.config_name != null)
             {
-                label = "Intensity";
-                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0)
+                if (!Check_Overlay.Checked)
+                {
+                    Clear_Chart(true);
+                }
+
+                int secNum = Scan.ScanConfigData.head.num_sections == 0 ? 1 : Scan.ScanConfigData.head.num_sections;
+                for (int i = 0; i < secNum; i++)
+                {
+                    var chartValues_ref = new GearedValues<CustomerVm>();
+                    var chartValues_i = new GearedValues<CustomerVm>();
+                    var chartValues_a = new GearedValues<CustomerVm>();
+                    var chartValues_r = new GearedValues<CustomerVm>();
+
+                    int patNum = secNum == 1 ? valY.Length : Scan.ScanConfigData.section[i].num_patterns;
+                    for (int j = 0; j < patNum; j++)
+                    {
+                        double x = Math.Round(Scan.WaveLength[j + dataCount], 2, MidpointRounding.AwayFromZero);
+                        if (Scan.ReferenceIntensity.Count > 0)
+                            chartValues_ref.Add(new CustomerVm
+                            {
+                                x = x,
+                                y = Scan.ReferenceIntensity[j + dataCount],
+                                fileName = IsSavedScanData ? SelectScanFileName : scanFileName,
+                                serialNumber = Device.DevInfo.SerialNumber,
+                                temp = Scan.SensorData[0].ToString(),
+                                humi = Scan.SensorData[2].ToString()
+                            });
+                        if (Scan.Intensity.Count > 0)
+                            chartValues_i.Add(new CustomerVm
+                            {
+                                x = x,
+                                y = Scan.Intensity[j + dataCount],
+                                fileName = IsSavedScanData ? SelectScanFileName : scanFileName,
+                                serialNumber = Device.DevInfo.SerialNumber,
+                                temp = Scan.SensorData[0].ToString(),
+                                humi = Scan.SensorData[2].ToString()
+                            });
+
+                        if (Scan.Absorbance.Count > 0)
+                            chartValues_a.Add(new CustomerVm
+                            {
+                                x = x,
+                                y = Math.Round(Scan.Absorbance[j + dataCount], 8, MidpointRounding.AwayFromZero),
+                                fileName = IsSavedScanData ? SelectScanFileName : scanFileName,
+                                serialNumber = Device.DevInfo.SerialNumber,
+                                temp = Scan.SensorData[0].ToString(),
+                                humi = Scan.SensorData[2].ToString()
+                            });
+                        if (Scan.Reflectance.Count > 0)
+                            chartValues_r.Add(new CustomerVm
+                            {
+                                x = x,
+                                y = Math.Round(Scan.Reflectance[j + dataCount], 8, MidpointRounding.AwayFromZero),
+                                fileName = IsSavedScanData ? SelectScanFileName : scanFileName,
+                                serialNumber = Device.DevInfo.SerialNumber,
+                                temp = Scan.SensorData[0].ToString(),
+                                humi = Scan.SensorData[2].ToString()
+                            });
+                    }
+                    dataCount += Scan.ScanConfigData.section[i].num_patterns;
+
+                    if (chartValues_ref.Count > 0)
+                    {
+                        ChartData_RefIntensity.Add(new GLineSeries
+                        {
+                            Values = chartValues_ref,
+                            Title = IsSavedScanData ? SelectScanFileName : scanFileName,
+                            Stroke = StrokeColors[ChartData_RefIntensity.Count % NumOfStrokeColors],
+                            StrokeThickness = 1,
+                            Fill = System.Windows.Media.Brushes.Transparent,
+                            LineSmoothness = 0,
+                            PointGeometry = null,
+                            PointGeometrySize = 0,
+                        });
+                    }
+
+                    if (chartValues_i.Count > 0)
+                    {
+                        ChartData_Intensity.Add(new GLineSeries
+                        {
+                            Values = chartValues_i,
+                            Title = IsSavedScanData ? SelectScanFileName : scanFileName,
+                            Stroke = StrokeColors[ChartData_Intensity.Count % NumOfStrokeColors],
+                            StrokeThickness = 1,
+                            Fill = System.Windows.Media.Brushes.Transparent,
+                            LineSmoothness = 0,
+                            PointGeometry = null,
+                            PointGeometrySize = 0,
+                        });
+                    }
+
+                    if (chartValues_a.Count > 0)
+                    {
+                        ChartData_Absorbance.Add(new GLineSeries
+                        {
+                            Values = chartValues_a,
+                            Title = IsSavedScanData ? SelectScanFileName : scanFileName,
+                            Stroke = StrokeColors[ChartData_Absorbance.Count % NumOfStrokeColors],
+                            StrokeThickness = 1,
+                            Fill = System.Windows.Media.Brushes.Transparent,
+                            LineSmoothness = 0,
+                            PointGeometry = null,
+                            PointGeometrySize = 0,
+                        });
+                    }
+
+                    if (chartValues_r.Count > 0)
+                    {
+                        ChartData_Reflectance.Add(new GLineSeries
+                        {
+                            Values = chartValues_r,
+                            Title = IsSavedScanData ? SelectScanFileName : scanFileName,
+                            Stroke = StrokeColors[ChartData_Reflectance.Count % NumOfStrokeColors],
+                            StrokeThickness = 1,
+                            Fill = System.Windows.Media.Brushes.Transparent,
+                            LineSmoothness = 0,
+                            PointGeometry = null,
+                            PointGeometrySize = 0,
+                        });
+                    }
+                }
+            }
+
+            if (tabScanPage.SelectedIndex == 2 && !Check_Overlay.Checked) // Save scans tab selected
+            {
+                RadioButton_Reference.Enabled = (Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0;
+                RadioButton_Intensity.Enabled = (Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0;
+                RadioButton_Absorbance.Enabled = (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Absorbance) > 0) || ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reflectance) > 0)) ||
+                    (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0) && ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0));
+                RadioButton_Reflectance.Enabled = (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Absorbance) > 0) || ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reflectance) > 0)) ||
+                    (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0) && ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0));
+                Scan.Overlap_Data_Content_Idx = 0;
+            }
+            else if (tabScanPage.SelectedIndex == 2 && Check_Overlay.Checked)
+            {
+                Scan.Overlap_Data_Content_Idx |= Scan.Imported_Data_Content_Idx;
+                
+                int dataCounter = 0;
+
+                if (RadioButton_Intensity.Checked)
+                    dataCounter = ChartData_Intensity.Count;
+                else if (RadioButton_Reference.Checked)
+                    dataCounter = ChartData_RefIntensity.Count;
+                else if (RadioButton_Absorbance.Checked)
+                    dataCounter = ChartData_Absorbance.Count;
+                else if (RadioButton_Reflectance.Checked)
+                    dataCounter = ChartData_Reflectance.Count;
+
+                bool plotDataValid = (RadioButton_Reference.Checked && (Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0) ||
+                                        (RadioButton_Intensity.Checked && (Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0) ||
+                                        (RadioButton_Absorbance.Checked && (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Absorbance) > 0) || ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reflectance) > 0)) ||
+                                        (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0) && ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0))) ||
+                                        (RadioButton_Reflectance.Checked && (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Absorbance) > 0) || ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reflectance) > 0)) ||
+                                        (((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Reference) > 0) && ((Scan.Imported_Data_Content_Idx & Scan.ImportedDataType.Sample) > 0)));
+
+                if (!plotDataValid && dataCounter > 1)
+                    Message.ShowError("The file does not have valid data for the selected spectrum overlap!");
+
+                RadioButton_Reference.Enabled = ChartData_RefIntensity.Count > 0;
+                RadioButton_Intensity.Enabled = ChartData_Intensity.Count > 0;
+                RadioButton_Absorbance.Enabled = ChartData_Absorbance.Count > 0;
+                RadioButton_Reflectance.Enabled = ChartData_Reflectance.Count > 0;
+            }
+
+            if ((!IsSavedScanData && RadioButton_Intensity.Checked) || (IsSavedScanData && RadioButton_Intensity.Checked && RadioButton_Intensity.Enabled))
+            {
+                if (Scan.Intensity != null && Scan.Intensity.Count != 0)
                 {
                     List<double> doubleList = Scan.Intensity.ConvertAll(x => (double)x);
                     valY = doubleList.ToArray();
@@ -3082,48 +3807,41 @@ namespace ISC_Win_WinForm_GUI
                 else
                 {
                     dataValid = false;
-                    if (AppLoaded)
+                    if (AppLoaded && !Check_Overlay.Checked)
                         Message.ShowError("Sample intensity is not valid!");
                 }
             }
-            else if ((bool)RadioButton_Absorbance.Checked == true)
+            else if ((!IsSavedScanData && RadioButton_Absorbance.Checked) || (IsSavedScanData && RadioButton_Absorbance.Checked && RadioButton_Absorbance.Enabled))
             {
-                label = "Absorbance";
-                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0 &&
-                    Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0 &&
-                    Scan.Absorbance != null && Scan.Absorbance.Count != 0 && Scan.Absorbance[0] != 0)
+                if (Scan.Absorbance != null && Scan.Absorbance.Count != 0)
                 {
-                    valY = Scan.Absorbance.ToArray();
+                    valY = Scan.Absorbance.Select(d => Math.Round(d, 8, MidpointRounding.AwayFromZero)).ToArray();
                     dataValid = true;
                 }
                 else
                 {
                     dataValid = false;
-                    if (AppLoaded)
+                    if (AppLoaded && !Check_Overlay.Checked)
                         Message.ShowError("Can not calculate absorbance!\nSample or reference intensity is not valid!");
                 }
             }
-            else if ((bool)RadioButton_Reflectance.Checked == true)
+            else if ((!IsSavedScanData && RadioButton_Reflectance.Checked) || (IsSavedScanData && RadioButton_Reflectance.Checked && RadioButton_Reflectance.Enabled))
             {
-                label = "Reflectance";
-                if (Scan.Intensity != null && Scan.Intensity.Count != 0 && Scan.Intensity[0] != 0 &&
-                    Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0 && 
-                    Scan.Reflectance != null && Scan.Reflectance.Count != 0 && Scan.Reflectance[0] != 0)
+                if (Scan.Reflectance != null && Scan.Reflectance.Count != 0)
                 {
-                    valY = Scan.Reflectance.ToArray();
+                    valY = Scan.Reflectance.Select(d => Math.Round(d, 8, MidpointRounding.AwayFromZero)).ToArray();
                     dataValid = true;
                 }
                 else
                 {
                     dataValid = false;
-                    if (AppLoaded)
+                    if (AppLoaded && !Check_Overlay.Checked)
                         Message.ShowError("Can not calculate reflectance!\nSample or reference intensity is not valid!");
                 }
             }
-            else if ((bool)RadioButton_Reference.Checked == true)
+            else if ((!IsSavedScanData && RadioButton_Reference.Checked) || (IsSavedScanData && RadioButton_Reference.Checked && RadioButton_Reference.Enabled))
             {
-                label = "Reference";
-                if (Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0 && Scan.ReferenceIntensity[0] != 0)
+                if (Scan.ReferenceIntensity != null && Scan.ReferenceIntensity.Count != 0)
                 {
                     List<double> doubleList = Scan.ReferenceIntensity.ConvertAll(x => (double)x);
                     valY = doubleList.ToArray();
@@ -3132,25 +3850,93 @@ namespace ISC_Win_WinForm_GUI
                 else
                 {
                     dataValid = false;
-                    if (AppLoaded)
+                    if (AppLoaded && !Check_Overlay.Checked)
                         Message.ShowError("Reference intensity is not valid!");
                 }
             }
-
-            if ((!checkBox_zoom.Checked || updateAxis) && dataValid)
+            else if (IsSavedScanData)
             {
+                if (RadioButton_Intensity.Enabled)
+                    RadioButton_Intensity.Checked = true;
+                else if (RadioButton_Absorbance.Enabled)
+                    RadioButton_Absorbance.Checked = true;
+                else if (RadioButton_Reflectance.Enabled)
+                    RadioButton_Reflectance.Checked = true;
+                else if (RadioButton_Reference.Enabled)
+                    RadioButton_Reference.Checked = true;
+                return;
+            }
+
+            if (valY.Length != 0 && dataValid)
+            {
+                RadioButton_SpectrumData_CheckedChanged(null, null);
+            }
+
+            if (!dataValid && !Check_Overlay.Checked)
+                Clear_Chart();
+        }
+        private void GetMaxMinWav(ref int min, ref int max)
+        {
+            if (min == 0)
+                min = int.MaxValue;
+            if (max == 0)
+                max = int.MinValue;
+
+            for (int i = 0; i < Scan.ScanConfigData.head.num_sections; i++)
+            {
+                if (Scan.ScanConfigData.section[i].wavelength_start_nm < min)
+                {
+                    min = Scan.ScanConfigData.section[i].wavelength_start_nm;
+                }
+                if (Scan.ScanConfigData.section[i].wavelength_end_nm > max)
+                {
+                    max = Scan.ScanConfigData.section[i].wavelength_end_nm;
+                }
+            }
+        }
+
+        private void RadioButton_SpectrumData_CheckedChanged(object sender, EventArgs e)
+        {
+            RadioButton rBtn = sender as RadioButton;
+            if (rBtn == null || rBtn.Checked)
+            {
+                MyChart.Series.Clear();
                 MyChart.AxisX.Clear();
                 MyChart.AxisY.Clear();
 
+                int max_X = int.MinValue;
+                int min_X = int.MaxValue;
+                double max_Y = double.MinValue;
+                double min_Y = double.MaxValue;
+
+                List<GLineSeries> s = new List<GLineSeries>();
+                if (RadioButton_Reference.Checked)
+                    s = ChartData_RefIntensity;
+                else if (RadioButton_Intensity.Checked)
+                    s = ChartData_Intensity;
+                else if (RadioButton_Absorbance.Checked)
+                    s = ChartData_Absorbance;
+                else if (RadioButton_Reflectance.Checked)
+                    s = ChartData_Reflectance;
+
+                foreach (GLineSeries gl in s)
+                {
+                    foreach (CustomerVm v in gl.Values)
+                    {
+                        max_X = (v.x > max_X) ? (int)v.x : max_X;
+                        min_X = (v.x < min_X) ? (int)v.x : min_X;
+                        max_Y = (v.y > max_Y) ? v.y : max_Y;
+                        min_Y = (v.y < min_Y) ? v.y : min_Y;
+                    }
+                }
+
                 if (Scan.ScanConfigData.section != null)
                 {
-                    int min = Device.DevInfo.MaxWavelength, max = Device.DevInfo.MinWavelength;
-                    GetMaxMinWav(ref min, ref max);
                     MyChart.AxisX.Add(new Axis
                     {
                         Title = "Wavelength (nm)",
-                        MinValue = min,
-                        MaxValue = max,
+                        MinValue = min_X,
+                        MaxValue = max_X,
                         Separator = new Separator
                         {
                             Step = 50,
@@ -3172,148 +3958,92 @@ namespace ISC_Win_WinForm_GUI
                         }
                     });
                 }
-                MyChart.AxisY.Add(new Axis { Title = label });
-            }
-            for (int i = 0; i < Scan.ScanDataLen; i++)
-            {
-                if (valY.Length == 0)//fix 進去一開始點build-in再點overlay程式crash
+
+                double amplitudeY = Math.Abs(max_Y - min_Y);
+                max_Y = max_Y + (0.1 * amplitudeY);
+                min_Y = min_Y - (0.1 * amplitudeY);
+
+                String labelY = "";
+                if (RadioButton_Intensity.Checked)
                 {
-                    break;
+                    labelY = "Intensity";
+                    if (ChartData_Intensity.Count == 0)
+                        Clear_Chart();
+                    else
+                        MyChart.Series.AddRange(ChartData_Intensity);
                 }
-                if (Double.IsNaN(valY[i]) || Double.IsInfinity(valY[i]))
-                    valY[i] = 0;
-            }
-
-            if (valY.Length != 0 && Check_Overlay.Checked && dataValid)
-            {
-                for (int i = 0; i < Scan.ScanConfigData.head.num_sections; i++)
+                else if (RadioButton_Reference.Checked)
                 {
-                    var ChartValues = new GearedValues<ObservablePoint>();
-                    for (int j = 0; j < Scan.ScanConfigData.section[i].num_patterns; j++)
-                        ChartValues.Add(new ObservablePoint(valX[j + dataCount], valY[j + dataCount]));
-
-                    dataCount += Scan.ScanConfigData.section[i].num_patterns;
-                    MyChart.Series.Add(new GLineSeries
-                    {
-                        Values = ChartValues,
-                        Title = Scan.ScanConfigData.head.num_sections > 1
-                        ? string.Format("#{0}->[{1}]", MyChart.Series.Count / Scan.ScanConfigData.head.num_sections + 1, i)
-                        : string.Format("#{0}", MyChart.Series.Count + 1),
-                        StrokeThickness = 1,
-                        Fill = System.Windows.Media.Brushes.Transparent,
-                        LineSmoothness = 0,
-                        PointGeometry = null,
-                        PointGeometrySize = 0,
-                    });
+                    labelY = "Reference";
+                    if (ChartData_RefIntensity.Count == 0)
+                        Clear_Chart();
+                    else
+                        MyChart.Series.AddRange(ChartData_RefIntensity);
                 }
-            }
-            else if (valY.Length != 0 && dataValid)
-            {
-                int secNum = Scan.ScanConfigData.head.num_sections == 0 ? 1 : Scan.ScanConfigData.head.num_sections;
-                
-                for (int i = 0; i < secNum; i++)
+                else if (RadioButton_Absorbance.Checked)
                 {
-                    var chartValues = new GearedValues<ObservablePoint>();
-                    int patNum = Scan.ScanConfigData.head.num_sections == 0 ? valY.Length : Scan.ScanConfigData.section[i].num_patterns;
-                    for (int j = 0; j < patNum; j++)
-                        chartValues.Add(new ObservablePoint(valX[j + dataCount], valY[j + dataCount]));
-
-                    dataCount += Scan.ScanConfigData.section[i].num_patterns;
-                    MyChart.Series.Add(new GLineSeries
-                    {
-                        Values = chartValues,
-                        Title = Scan.ScanConfigData.head.num_sections == 1 ? string.Format("{0}", label) : string.Format("{0}\nsection[{1}]", label, i),
-                        StrokeThickness = 1,
-                        Fill = null,
-                        LineSmoothness = 0,
-                        PointGeometry = null,
-                        PointGeometrySize = 0,
-                    });
+                    labelY = "Absorbance";
+                    if (ChartData_Absorbance.Count == 0)
+                        Clear_Chart();
+                    else
+                        MyChart.Series.AddRange(ChartData_Absorbance);
                 }
-            }
-
-            // For initial the chart to avoid the crazy axis numbers
-            if (!dataValid)
-            {
-                MyChart.Series.Add(new GLineSeries
+                else if (RadioButton_Reflectance.Checked)
                 {
-                    Values = new GearedValues<ObservablePoint>(),
-                    Title = "Intensity",
-                    PointGeometry = null,
-                    StrokeThickness = 1
-                });
-            }
-        }
-        private void GetMaxMinWav(ref int min, ref int max)
-        {
-            if (min == 0)
-                min = int.MaxValue;
-            if (max == 0)
-                max = int.MinValue;
-
-            for (int i = 0; i < Scan.ScanConfigData.head.num_sections; i++)
-            {
-                if (Scan.ScanConfigData.section[i].wavelength_start_nm < min)
-                {
-                    min = Scan.ScanConfigData.section[i].wavelength_start_nm;
+                    labelY = "Reflectance";
+                    if (ChartData_Reflectance.Count == 0)
+                        Clear_Chart();
+                    else
+                        MyChart.Series.AddRange(ChartData_Reflectance);
                 }
-                if (Scan.ScanConfigData.section[i].wavelength_end_nm > max)
+
+                if (RadioButton_Absorbance.Checked || RadioButton_Reflectance.Checked)
                 {
-                    max = Scan.ScanConfigData.section[i].wavelength_end_nm;
+                    if (max_Y != min_Y)
+                        MyChart.AxisY.Add(new Axis
+                        {
+                        Title = labelY,
+                        MinValue = min_Y,
+                        MaxValue = max_Y,
+                        LabelFormatter = chartLabelFormatFunc
+                        });
+                    else
+                        MyChart.AxisY.Add(new Axis
+                        {
+                            Title = labelY,
+                            LabelFormatter = chartLabelFormatFunc
+                        });
+                }
+                else
+                {
+                    if (max_Y != min_Y)
+                        MyChart.AxisY.Add(new Axis
+                        {
+                            Title = labelY,
+                            MinValue = min_Y,
+                            MaxValue = max_Y
+                        });
+                    else
+                        MyChart.AxisY.Add( new Axis{ Title = labelY });
+                }
+
+                if (tabScanPage.SelectedIndex == 2)
+                {
+                    RadioButton_Reference.Enabled = ChartData_RefIntensity.Count > 0;
+                    RadioButton_Intensity.Enabled = ChartData_Intensity.Count > 0;
+                    RadioButton_Absorbance.Enabled = ChartData_Absorbance.Count > 0;
+                    RadioButton_Reflectance.Enabled = ChartData_Reflectance.Count > 0;
+                }
+                else
+                {
+                    RadioButton_Reference.Enabled = true;
+                    RadioButton_Intensity.Enabled = true;
+                    RadioButton_Absorbance.Enabled = true;
+                    RadioButton_Reflectance.Enabled = true;
                 }
             }
         }
-        private void RadioButton_Reflectance_CheckedChanged(object sender, EventArgs e)
-        {
-            RadioButton rBtn = sender as RadioButton;
-            if (rBtn.Checked)
-            {
-                if (Check_Overlay.Checked)//清除overlay的資料
-                {
-                    MyChart.Series.Clear();
-                }
-                SpectrumPlot(true);
-            }
-        }
 
-        private void RadioButton_Absorbance_CheckedChanged(object sender, EventArgs e)
-        {
-            RadioButton rBtn = sender as RadioButton;
-            if (rBtn.Checked)
-            {
-                if (Check_Overlay.Checked)//清除overlay的資料
-                {
-                    MyChart.Series.Clear();
-                }
-                SpectrumPlot(true);
-            }
-        }
-
-        private void RadioButton_Intensity_CheckedChanged(object sender, EventArgs e)
-        {
-            RadioButton rBtn = sender as RadioButton;
-            if (rBtn.Checked)
-            {
-                if (Check_Overlay.Checked)//清除overlay的資料
-                {
-                    MyChart.Series.Clear();
-                }
-                SpectrumPlot(true);
-            }
-        }
-
-        private void RadioButton_Reference_CheckedChanged(object sender, EventArgs e)
-        {
-            RadioButton rBtn = sender as RadioButton;
-            if (rBtn.Checked)
-            {
-                if (Check_Overlay.Checked)//清除overlay的資料
-                {
-                    MyChart.Series.Clear();
-                }
-                SpectrumPlot(true);
-            }
-        }
         #endregion
         #region scan item set
         private void CheckBox_AutoGain_CheckedChanged(object sender, EventArgs e)
@@ -3350,7 +4080,7 @@ namespace ISC_Win_WinForm_GUI
                 HWRev = (!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(0, 1) : String.Empty;
 
             //GetActivationKeyStatus();
-            if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2 || label_ActivateStatus.Text.Equals("Activated!") == false)
+            if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2 || label_ActivateStatus.Text.Equals("Activated") == false)
             {
                 CheckBox_AutoGain.Checked = false;
                 CheckBox_AutoGain.Enabled = false;
@@ -3381,7 +4111,7 @@ namespace ISC_Win_WinForm_GUI
             if (Device.IsConnected())
                 HWRev = (!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(0, 1) : String.Empty;
 
-            if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2 || label_ActivateStatus.Text.Equals("Activated!") == false)
+            if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2 || label_ActivateStatus.Text.Equals("Activated") == false)
             {
                 CheckBox_AutoGain.Checked = false;
                 CheckBox_AutoGain.Enabled = false;
@@ -3486,27 +4216,23 @@ namespace ISC_Win_WinForm_GUI
                 Byte[] HWRev = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev);
                 Int32 MB_Ver = HWRev[0];
 
-                if (Device.DevInfo.Manufacturing_SerialNumber.Length >= 18)
-                    FileName = Device.DevInfo.Manufacturing_SerialNumber;
-                else
-                    FileName = Device.DevInfo.ModelName + "_" + Device.DevInfo.SerialNumber;
-
+                FileName = Device.DevInfo.ModelName + "_" + Device.DevInfo.SerialNumber;
                 FileName = Path.Combine(Dir_Scan_For_New, FileName + "_Lamp_Warm_Up_" + startTime.ToString("yyyyMMdd_HHmmss") + ".csv");
 
-                FileStream fs = new FileStream(FileName, FileMode.Create);
+                FileStream fs = new FileStream(@FileName, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
                 if (MB_Ver >= 'F' && MB_Ver != 'N')
                 {
                     sw.WriteLine("Time,System Temp,System Humidity,Tiva Temp,Lamp ADC0,Lamp ADC1,Lamp ADC2,Lamp ADC3");
                     for (int i = 0; i < timeStamp.Count; i++)
-                        sw.WriteLine(timeStamp[i] + "," + sysTemp[i] + "," + sysHumi[i] + "," + tivaTemp[i] + "," + lampADC0[i] + "," + lampADC1[i] + "," + lampADC2[i] + "," + lampADC3[i]);
+                        sw.WriteLine(timeStamp[i] + CSV_Delimiter + sysTemp[i] + CSV_Delimiter + sysHumi[i] + CSV_Delimiter + tivaTemp[i] + CSV_Delimiter + lampADC0[i] + CSV_Delimiter + lampADC1[i] + CSV_Delimiter + lampADC2[i] + CSV_Delimiter + lampADC3[i]);
                 }
                 else
                 {
-                    sw.WriteLine("Time,System Temp,System Humidity,Tiva Temp,Lamp Intensity");
+                    sw.WriteLine("Time,System Temp,System Humidity,Tiva Temp,Lamp Indicator");
                     for (int i = 0; i < timeStamp.Count; i++)
-                        sw.WriteLine(timeStamp[i] + "," + sysTemp[i] + "," + sysHumi[i] + "," + tivaTemp[i] + "," + lampADC0[i]);
+                        sw.WriteLine(timeStamp[i] + CSV_Delimiter + sysTemp[i] + CSV_Delimiter + sysHumi[i] + CSV_Delimiter + tivaTemp[i] + CSV_Delimiter + lampADC0[i]);
                 }
                 sw.Flush();
                 sw.Close();
@@ -3526,11 +4252,14 @@ namespace ISC_Win_WinForm_GUI
                 Byte[] HWRev = Encoding.ASCII.GetBytes(Device.DevInfo.HardwareRev);
                 Int32 MB_Ver = HWRev[0];
 
-                if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
+                if (Con_OneMin_WarmUp.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                {
                     TextBox_WarmUpTime.Text = "1";
+                }
                 else
+                {
                     TextBox_WarmUpTime.Text = "3";
-                return;
+                }
             }
         }
 
@@ -3543,11 +4272,9 @@ namespace ISC_Win_WinForm_GUI
             if (Device.IsConnected())
                 HWRev = (!String.IsNullOrEmpty(Device.DevInfo.HardwareRev)) ? Device.DevInfo.HardwareRev.Substring(0, 1) : String.Empty;
 
-            if (label_ActivateStatus.Text.Equals("Activated!") == true)
+            if (label_ActivateStatus.Text.Equals("Activated") == true)
                 TextBox_LampStableTime.Enabled = true;
             CheckBox_AutoGain.Enabled = true;
-            CheckBox_AutoGain.Checked = true;
-            CheckBox_AutoGain_CheckedChanged(sender, e);
             RadioButton_Absorbance.Enabled = true;
             RadioButton_Reflectance.Enabled = true;
 
@@ -3587,7 +4314,7 @@ namespace ISC_Win_WinForm_GUI
             KEY_ACTIVATE,
             KEY_NOT_ACTIVATE,
         };
-        private void GUI_Handler(int state)
+        private void GUI_Handler(int state, bool reload = false)
         {
             if (previous_state == state)
                 return;
@@ -3603,9 +4330,7 @@ namespace ISC_Win_WinForm_GUI
                     {
                         CheckBox_LampOn.Visible = false;
 
-                        if ((Device.DevInfo.ModelType == "R3") ||
-                            (Device.DevInfo.ModelName.Contains("R3")) ||
-                            (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O'))
+                        if (Con_No_KeepLampOn.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
                         {
                             RadioButton_LampOn.Visible = false;
                         }
@@ -3614,8 +4339,7 @@ namespace ISC_Win_WinForm_GUI
                             RadioButton_LampOn.Visible = true;
                         }
 
-                        if (Device.DevInfo.ModelType == "R3" ||
-                            Device.DevInfo.ModelName.Contains("R3"))
+                        if (Con_No_WarmUp.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
                         {
                             RadioButton_WarmUp.Visible = false;
                             TextBox_WarmUpTime.Visible = false;
@@ -3625,10 +4349,14 @@ namespace ISC_Win_WinForm_GUI
                             RadioButton_WarmUp.Visible = true;
                             TextBox_WarmUpTime.Visible = true;
 
-                            if (Device.DevInfo.ModelType == "R" && MB_Ver >= 'O')
+                            if (Con_OneMin_WarmUp.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier())
+                            {
                                 TextBox_WarmUpTime.Text = "1";
+                            }
                             else
+                            {
                                 TextBox_WarmUpTime.Text = "3";
+                            }
                         }
 
                         RadioButton_LampOff.Visible = true;
@@ -3662,7 +4390,7 @@ namespace ISC_Win_WinForm_GUI
 
                         toolStripStatus_DeviceStatus.Text = (Device.DevInfo.MinWavelength == 900 ? "Standard Wavelength " : Device.DevInfo.MinWavelength == 1350 ? "Extended Wavelength " : "Extended Plus Wavelength ") +
                             "Device: " + Device.DevInfo.ModelName + " (" + Device.DevInfo.SerialNumber + ")";
-                        label_ActivateStatus.Text = "Activated!";
+                        label_ActivateStatus.Text = "Activated";
                         break;
                     }
                 case (int)MainWindow.GUI_State.KEY_NOT_ACTIVATE:
@@ -3701,52 +4429,39 @@ namespace ISC_Win_WinForm_GUI
                 default:
                     break;
             }
+            if (reload)
+            {
+                this.Dispose();
+                new MainWindow(null).ShowDialog();
+            }
         }
         #endregion
         #region save scan to file
         private void SaveToFiles()
         {
-            String FileName = String.Empty;
+            CurrentScanFileName = String.Empty;
             if (CheckBox_FileNamePrefix.Checked == true)
             {
-                String Prefix1 = Helper.CheckRegex_Chinese(TextBox_FileNamePrefix1.Text);
-                String Prefix2 = Helper.CheckRegex_Chinese(TextBox_FileNamePrefix2.Text);
-                String Prefix3 = Helper.CheckRegex_Chinese(TextBox_FileNamePrefix3.Text);
-
-                if (Prefix1.Length > 50)
-                {
-                    Prefix1 = Prefix1.Substring(0, 50);
-                    TextBox_FileNamePrefix1.Text = Prefix1;
-                    Message.ShowWarning("File name prefix_1 is too long, only catch the first 50 characters.");
-                }
-                if (Prefix2.Length > 50)
-                {
-                    Prefix2 = Prefix2.Substring(0, 50);
-                    TextBox_FileNamePrefix1.Text = Prefix2;
-                    Message.ShowWarning("File name prefix_2 is too long, only catch the first 50 characters.");
-                }
-                if (Prefix3.Length > 50)
-                {
-                    Prefix3 = Prefix3.Substring(0, 50);
-                    TextBox_FileNamePrefix1.Text = Prefix3;
-                    Message.ShowWarning("File name prefix_3 is too long, only catch the first 50 characters.");
-                }
+                String Prefix1 = TextBox_FileNamePrefix1.Text.Substring(0, TextBox_FileNamePrefix1.Text.Length);
+                String Prefix2 = TextBox_FileNamePrefix2.Text.Substring(0, TextBox_FileNamePrefix2.Text.Length);
+                String Prefix3 = TextBox_FileNamePrefix3.Text.Substring(0, TextBox_FileNamePrefix3.Text.Length);
 
                 String combinedPrefix = "";
                 combinedPrefix = String.IsNullOrEmpty(Prefix1) ? "" : (Prefix1 + "_");
                 combinedPrefix = String.IsNullOrEmpty(Prefix2) ? combinedPrefix : (combinedPrefix + Prefix2 + "_");
-                combinedPrefix = String.IsNullOrEmpty(Prefix3) ? combinedPrefix : (combinedPrefix + Prefix3 + "_"); ;
+                combinedPrefix = String.IsNullOrEmpty(Prefix3) ? combinedPrefix : (combinedPrefix + Prefix3 + "_"); 
 
-                FileName = Path.Combine(Dir_Scan_For_New, combinedPrefix + Scan.ScanConfigData.head.config_name + "_" + TimeScanStart.ToString("yyyyMMdd_HHmmss"));
+                CurrentScanFileName = Path.Combine(Dir_Scan_For_New, combinedPrefix + Scan.ScanConfigData.head.config_name + "_" + TimeScanStart.ToString("yyyyMMdd_HHmmss"));
+                CurrentScanFileName = @"\\?\" + CurrentScanFileName;
             }
             else
             {
-                FileName = Path.Combine(Dir_Scan_For_New, Scan.ScanConfigData.head.config_name + "_" + TimeScanStart.ToString("yyyyMMdd_HHmmss"));
+                CurrentScanFileName = Path.Combine(Dir_Scan_For_New, Scan.ScanConfigData.head.config_name + "_" + TimeScanStart.ToString("yyyyMMdd_HHmmss"));
             }
 
             //check path
-            String dirpath = Path.GetDirectoryName(FileName);
-            String file = Path.GetFileName(FileName);
+            String dirpath = Path.GetDirectoryName(CurrentScanFileName);
+            String file = Path.GetFileName(CurrentScanFileName);
             if (!Directory.Exists(dirpath))
             {
                 DialogResult result = Message.ShowQuestion("The directory has not exist. Do you want to create?\n    Yes,\t\t create directory.\n    No,\t\t save to default directory.\n    Cancel,\t\t not create and save.", null, MessageBoxButtons.YesNoCancel);
@@ -3781,7 +4496,7 @@ namespace ISC_Win_WinForm_GUI
                             catch (Exception ex) { DBG.WriteLine(ex.Message); logFile.Error(ex.Message); }
                         }
                         TextBox_SaveDirPath.Text = defpath;
-                        FileName = defpath + "\\" + file;
+                        CurrentScanFileName = defpath + "\\" + file;
                     }
                     catch (Exception e)
                     {
@@ -3798,20 +4513,22 @@ namespace ISC_Win_WinForm_GUI
             }
 
             if (Device.ErrStatus > 0)
-                FileName += "_Error_Detected";
+                CurrentScanFileName += "_Error_Detected";
 
-            SaveToCSV(FileName + ".csv");
-            SaveToJCAMP(FileName + ".jdx");
+            SaveToCSV(CurrentScanFileName + ".csv");
+            SaveToJCAMP(CurrentScanFileName + ".jdx");
 
             if (CheckBox_SaveDAT.Checked == true)
             {
-                Scan.SaveScanResultToBinFile(FileName + ".dat");  // For populating saved scan
-                AddFileToSavedScanList(FileName + ".dat");
+                Scan.SaveScanResultToBinFile(CurrentScanFileName + ".dat", 
+                    ReferenceSelect == Scan.SCAN_REF_TYPE.SCAN_REF_BUILT_IN ? 'N' : Scan.IsLocalRefScanAutoPGA() == 1 ? 'A' : 'F', 
+                    CheckBox_AutoGain.Checked ? 'A' : 'F');  // For populating saved scan
+                AddFileToSavedScanList(CurrentScanFileName + ".dat");
             }
 
             if (CheckBox_AverageCSV.Checked)
             {
-                SaveToAverageCSV(FileName + ".csv");
+                SaveToAverageCSV(CurrentScanFileName + ".csv");
             }
         }
 
@@ -3819,16 +4536,16 @@ namespace ISC_Win_WinForm_GUI
         {
             if (CheckBox_SaveCombCSV.Checked == true)
             {
-                FileStream fs = new FileStream(FileName, FileMode.Create);
+                FileStream fs = new FileStream(@FileName, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
                 if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                 {
-                    sw.WriteLine("Wavelength (nm),Absorbance (AU),Reference Signal (unitless),Sample Signal (unitless)");
+                    sw.WriteLine("Wavelength (nm)" + CSV_Delimiter + "Absorbance (AU)" + CSV_Delimiter + "Reference Signal (unitless)" + CSV_Delimiter + "Sample Signal (unitless)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Absorbance[i] + "," + Scan.ReferenceIntensity[i] + "," + Scan.Intensity[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Absorbance[i] + CSV_Delimiter + Scan.ReferenceIntensity[i] + CSV_Delimiter + Scan.Intensity[i]);
                     }
                 }
                 if (checkBox_EnableBlackLevelData.Checked)
@@ -3841,12 +4558,12 @@ namespace ISC_Win_WinForm_GUI
                         sw.WriteLine("\n***Scan Black Level Data***");
                         for (int i = 0; i < Scan.BlackLevel.Count; i++)
                         {
-                            sw.WriteLine((i + 1) + "," + Scan.BlackLevel[i]);
+                            sw.WriteLine((i + 1) + CSV_Delimiter + Scan.BlackLevel[i]);
                         }
                         sw.WriteLine("\n***Scan Raw ADC Data***");
                         for (int i = 0; i < Scan.RawData.Count; i++)
                         {
-                            sw.WriteLine((i + 1) + "," + Scan.RawData[i]);
+                            sw.WriteLine((i + 1) + CSV_Delimiter + Scan.RawData[i]);
                         }
 
                         if (MB_Ver > 'E' && MB_Ver != 'N' && !(Device.DevInfo.ModelType == "F"))
@@ -3857,14 +4574,14 @@ namespace ISC_Win_WinForm_GUI
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
+                                    sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                                 else
-                                    sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
+                                    sw.WriteLine("ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine("Timestamp(ms),ADC");
+                                    sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC");
                                 else
                                     sw.WriteLine("ADC");
                             }
@@ -3873,14 +4590,14 @@ namespace ISC_Win_WinForm_GUI
                                 if (Device.DevInfo.ModelType == "R")
                                 {
                                     if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + CSV_Delimiter + Device.LampRampUpADC[i * 4] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 1] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 2] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 3]);
                                     else
-                                        sw.WriteLine(Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                        sw.WriteLine(Device.LampRampUpADC[i * 4] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 1] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 2] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 3]);
                                 }
                                 else
                                 {
                                     if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4]);
+                                        sw.WriteLine(Device.LampAdcTimeStamp[i] + CSV_Delimiter + Device.LampRampUpADC[i * 4]);
                                     else
                                         sw.WriteLine(Device.LampRampUpADC[i * 4]);
                                 }
@@ -3891,14 +4608,14 @@ namespace ISC_Win_WinForm_GUI
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
+                                    sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                                 else
-                                    sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
+                                    sw.WriteLine("ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine("Timestamp(ms),ADC");
+                                    sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC");
                                 else
                                     sw.WriteLine("ADC");
                             }
@@ -3907,15 +4624,15 @@ namespace ISC_Win_WinForm_GUI
                                 if (Device.DevInfo.ModelType == "R")
                                 {
                                     if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 1] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 2] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 3]);
                                     else
-                                        sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                        sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 1] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 2] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 3]);
 
                                 }
                                 else
                                 {
                                     if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4]);
+                                        sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4]);
                                     else
                                         sw.WriteLine(Device.LampRepeatedScanADC[i * 4]);
                                 }
@@ -3933,16 +4650,16 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveICSV.Checked == true)
             {
                 String FileName_i = FileName.Insert(FileName.LastIndexOf(".csv"), "_i");
-                FileStream fs = new FileStream(FileName_i, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_i, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
                 if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                 {
-                    sw.WriteLine("Wavelength (nm),Sample Signal (unitless)");
+                    sw.WriteLine("Wavelength (nm)" + CSV_Delimiter + "Sample Signal (unitless)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Intensity[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Intensity[i]);
                     }
                 }
 
@@ -3953,16 +4670,16 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveACSV.Checked == true)
             {
                 String FileName_a = FileName.Insert(FileName.LastIndexOf(".csv"), "_a");
-                FileStream fs = new FileStream(FileName_a, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_a, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
                 if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                 {
-                    sw.WriteLine("Wavelength (nm),Absorbance (AU)");
+                    sw.WriteLine("Wavelength (nm)" + CSV_Delimiter + "Absorbance (AU)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Absorbance[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Absorbance[i]);
                     }
                 }
 
@@ -3973,16 +4690,16 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveRCSV.Checked == true)
             {
                 String FileName_r = FileName.Insert(FileName.LastIndexOf(".csv"), "_r");
-                FileStream fs = new FileStream(FileName_r, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_r, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
                 if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                 {
-                    sw.WriteLine("Wavelength (nm),Reflectance (unitless)");
+                    sw.WriteLine("Wavelength (nm)" + CSV_Delimiter + "Reflectance (unitless)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Reflectance[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Reflectance[i]);
                     }
                 }
 
@@ -3999,7 +4716,7 @@ namespace ISC_Win_WinForm_GUI
 
                 try
                 {
-                    using (FileStream fs = new FileStream(FileName_one, FileMode.Append, FileAccess.Write))
+                    using (FileStream fs = new FileStream(@FileName_one, FileMode.Append, FileAccess.Write))
                     {
                         using (StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8))
                         {
@@ -4009,23 +4726,23 @@ namespace ISC_Win_WinForm_GUI
 
                                 if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                                 {
-                                    sw.Write("Wavelength (nm),");
+                                    sw.Write("Wavelength (nm)" + CSV_Delimiter);
                                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
-                                        sw.Write(Scan.WaveLength[i] + ",");
+                                        sw.Write(Scan.WaveLength[i] + CSV_Delimiter);
                                     sw.Write("\n");
 
-                                    sw.Write("Reference Signal (unitless),");
+                                    sw.Write("Reference Signal (unitless)" + CSV_Delimiter);
                                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
-                                        sw.Write(Scan.ReferenceIntensity[i] + ",");
+                                        sw.Write(Scan.ReferenceIntensity[i] + CSV_Delimiter);
                                     sw.Write("\n");
                                 }
                             }
 
                             if (Device.ErrStatus == 0)  // Skip invalid scan data if error status received
                             {
-                                sw.Write("Sample Signal (unitless),");
+                                sw.Write("Sample Signal (unitless)" + CSV_Delimiter);
                                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
-                                    sw.Write(Scan.Intensity[i] + ",");
+                                    sw.Write(Scan.Intensity[i] + CSV_Delimiter);
                                 sw.Write("\n");
                             }
                         }
@@ -4040,6 +4757,7 @@ namespace ISC_Win_WinForm_GUI
                     OneScanFileName = String.Empty;
                     SaveOneCSVFile = false;
                     Button_Scan.Text = "Scan";
+                    Manual_ContScan_UI_Con(false);
                     SDK.IsConnectionChecking = true;
                     MessageBox.Show(this, "Open CSV file for saving failed!\nThe file might be corrupted or openned by other application.", "Save File Error", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
                 }
@@ -4056,7 +4774,7 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveIJDX.Checked == true)
             {
                 String FileName_i = FileName.Insert(FileName.LastIndexOf("_", FileName.Length - 20), "_i");
-                FileStream fs = new FileStream(FileName_i, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_i, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, true);
 
@@ -4069,7 +4787,7 @@ namespace ISC_Win_WinForm_GUI
                     sw.WriteLine("##XYPOINTS=(XY..XY)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Intensity[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Intensity[i]);
                     }
                     sw.WriteLine("##END=");
                 }
@@ -4081,7 +4799,7 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveAJDX.Checked == true)
             {
                 String FileName_a = FileName.Insert(FileName.LastIndexOf("_", FileName.Length - 20), "_a");
-                FileStream fs = new FileStream(FileName_a, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_a, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, true);
 
@@ -4094,7 +4812,7 @@ namespace ISC_Win_WinForm_GUI
                     sw.WriteLine("##XYPOINTS=(XY..XY)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Absorbance[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Absorbance[i]);
                     }
                     sw.WriteLine("##END=");
                 }
@@ -4106,7 +4824,7 @@ namespace ISC_Win_WinForm_GUI
             if (CheckBox_SaveRJDX.Checked == true)
             {
                 String FileName_r = FileName.Insert(FileName.LastIndexOf("_", FileName.Length - 20), "_r");
-                FileStream fs = new FileStream(FileName_r, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_r, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, true);
 
@@ -4119,7 +4837,7 @@ namespace ISC_Win_WinForm_GUI
                     sw.WriteLine("##XYPOINTS=(XY..XY)");
                     for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                     {
-                        sw.WriteLine(Scan.WaveLength[i] + "," + Scan.Reflectance[i]);
+                        sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + Scan.Reflectance[i]);
                     }
                     sw.WriteLine("##END=");
                 }
@@ -4173,17 +4891,17 @@ namespace ISC_Win_WinForm_GUI
                 //Save file
                 String FileName_average = AverageScanFileName.Insert(AverageScanFileName.LastIndexOf("_", AverageScanFileName.Length - 20), "_average");
 
-                FileStream fs = new FileStream(FileName_average, FileMode.Create);
+                FileStream fs = new FileStream(@FileName_average, FileMode.Create);
                 StreamWriter sw = new StreamWriter(fs, System.Text.Encoding.UTF8);
                 SaveHeader(sw, false);
 
                 Int32 realCount = Device.ErrStatus == 0 ? ScannedCounts : ScannedCounts - 1;
                 sw.WriteLine("Num Scan:," + realCount.ToString() + "\n");
 
-                sw.WriteLine("Wavelength (nm),Absorbance (AU),Reference Signal (unitless),Sample Signal (unitless)");
+                sw.WriteLine("Wavelength (nm)" + CSV_Delimiter + "Absorbance (AU)" + CSV_Delimiter + "Reference Signal (unitless)" + CSV_Delimiter + "Sample Signal (unitless)");
                 for (Int32 i = 0; i < Scan.ScanDataLen; i++)
                 {
-                    sw.WriteLine(Scan.WaveLength[i] + "," + AverageAbsorbance[i] + "," + Scan.ReferenceIntensity[i] + "," + AverageIntensity[i]);
+                    sw.WriteLine(Scan.WaveLength[i] + CSV_Delimiter + AverageAbsorbance[i] + CSV_Delimiter + Scan.ReferenceIntensity[i] + CSV_Delimiter + AverageIntensity[i]);
                 }
                 if (GetFW_LEVEL() >= FW_LEVEL.LEVEL_4 && Device.IsConnected())
                 {
@@ -4198,14 +4916,14 @@ namespace ISC_Win_WinForm_GUI
                         if (Device.DevInfo.ModelType == "R")
                         {
                             if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
+                                sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                             else
-                                sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
+                                sw.WriteLine("ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                         }
                         else
                         {
                             if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC");
+                                sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC");
                             else
                                 sw.WriteLine("ADC");
                         }
@@ -4214,14 +4932,14 @@ namespace ISC_Win_WinForm_GUI
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + CSV_Delimiter + Device.LampRampUpADC[i * 4] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 1] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 2] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 3]);
                                 else
-                                    sw.WriteLine(Device.LampRampUpADC[i * 4] + "," + Device.LampRampUpADC[i * 4 + 1] + "," + Device.LampRampUpADC[i * 4 + 2] + "," + Device.LampRampUpADC[i * 4 + 3]);
+                                    sw.WriteLine(Device.LampRampUpADC[i * 4] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 1] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 2] + CSV_Delimiter + Device.LampRampUpADC[i * 4 + 3]);
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + "," + Device.LampRampUpADC[i * 4]);
+                                    sw.WriteLine(Device.LampAdcTimeStamp[i] + CSV_Delimiter + Device.LampRampUpADC[i * 4]);
                                 else
                                     sw.WriteLine(Device.LampRampUpADC[i * 4]);
                             }
@@ -4232,14 +4950,14 @@ namespace ISC_Win_WinForm_GUI
                         if (Device.DevInfo.ModelType == "R")
                         {
                             if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC0,ADC1,ADC2,ADC3");
+                                sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                             else
-                                sw.WriteLine("ADC0,ADC1,ADC2,ADC3");
+                                sw.WriteLine("ADC0" + CSV_Delimiter + "ADC1" + CSV_Delimiter + "ADC2" + CSV_Delimiter + "ADC3");
                         }
                         else
                         {
                             if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                sw.WriteLine("Timestamp(ms),ADC");
+                                sw.WriteLine("Timestamp(ms)" + CSV_Delimiter + "ADC");
                             else
                                 sw.WriteLine("ADC");
                         }
@@ -4248,15 +4966,15 @@ namespace ISC_Win_WinForm_GUI
                             if (Device.DevInfo.ModelType == "R")
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 1] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 2] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 3]);
                                 else
-                                    sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + "," + Device.LampRepeatedScanADC[i * 4 + 1] + "," + Device.LampRepeatedScanADC[i * 4 + 2] + "," + Device.LampRepeatedScanADC[i * 4 + 3]);
+                                    sw.WriteLine(Device.LampRepeatedScanADC[i * 4] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 1] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 2] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4 + 3]);
 
                             }
                             else
                             {
                                 if (Device.DevInfo.TivaRev[0] >= 2 && Device.DevInfo.TivaRev[1] >= 5)
-                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + "," + Device.LampRepeatedScanADC[i * 4]);
+                                    sw.WriteLine(Device.LampAdcTimeStamp[Device.MAX_LAMP_RAMP_UP_ADC_SIZE / 4 + i] + CSV_Delimiter + Device.LampRepeatedScanADC[i * 4]);
                                 else
                                     sw.WriteLine(Device.LampRepeatedScanADC[i * 4]);
                             }
@@ -4276,7 +4994,7 @@ namespace ISC_Win_WinForm_GUI
                 }
             }
         }
-        private void SaveHeader(StreamWriter sw, Boolean ifJCAMP)
+        private void SaveHeader(StreamWriter sw, Boolean ifJCAMP, Boolean isFromDatFile = false)
         {
             String PreStr = String.Empty;
             if (ifJCAMP == true)
@@ -4355,11 +5073,11 @@ namespace ISC_Win_WinForm_GUI
                 if (MB_Ver >= 'F')
                     CSV[13, i * 7] = PreStr + "Lamp ADC:";
                 else
-                    CSV[13, i * 7] = PreStr + "Lamp Intensity:";
+                    CSV[13, i * 7] = PreStr + "Lamp Indicator:";
                 CSV[14, i * 7] = PreStr + "Data Date-Time:";
             }
 
-            if (isInitialization && Device.ErrStatus != 0)
+            if (IsFetchingDeviceInfo && Device.ErrStatus != 0)
             {
                 if (Device.ReadSensorsData() == 0)
                 {
@@ -4383,6 +5101,15 @@ namespace ISC_Win_WinForm_GUI
                     CSV[2, 3] = Scan.ScanConfigData.head.num_sections.ToString();
                     CSV[9, 1] = Scan.ScanConfigData.head.num_repeats.ToString();
                     CSV[10, 1] = Scan.PGA.ToString();
+                    if (isFromDatFile)
+                    {
+                        if (Device.DevInfo.DatFileSamplePGAFlag == 'A')
+                            CSV[10, 2] = "(AutoPGA)";
+                        else if (Device.DevInfo.DatFileSamplePGAFlag == 'F')
+                            CSV[10, 2] = "(FixedPGA)";
+                    }
+                    else
+                        CSV[10, 2] = CheckBox_AutoGain.Checked ? "(AutoPGA)" : "(FixedPGA)"; 
                     CSV[11, 1] = Scan.SensorData[0].ToString();
                     CSV[12, 1] = Scan.SensorData[2].ToString();
                     if (Device.DevInfo.ModelType == "F")
@@ -4429,6 +5156,26 @@ namespace ISC_Win_WinForm_GUI
                     CSV[2, 10] = Scan.ReferenceScanConfigData.head.num_sections.ToString();
                     CSV[9, 8] = Scan.ReferenceScanConfigData.head.num_repeats.ToString();
                     CSV[10, 8] = Scan.ReferencePGA.ToString();
+
+                    if (isFromDatFile)
+                    {
+                        if (Device.DevInfo.DatFileRefPGAFlag == 'A')
+                            CSV[10, 9] = "(AutoPGA)";
+                        else if (Device.DevInfo.DatFileRefPGAFlag == 'F')
+                            CSV[10, 9] = "(FixedPGA)";
+                    }
+                    else
+                    {
+                        if (ReferenceSelect != Scan.SCAN_REF_TYPE.SCAN_REF_BUILT_IN)
+                        {
+                            int localRefAutoPGAFlag = Scan.IsLocalRefScanAutoPGA();
+                            if (localRefAutoPGAFlag == 1)
+                                CSV[10, 9] = "(AutoPGA)";
+                            else if (localRefAutoPGAFlag == -1)
+                                CSV[10, 9] = "(FixedPGA)";
+                        }
+                    }
+
                     CSV[11, 8] = Scan.ReferenceSensorData[0].ToString();
                     CSV[12, 8] = Scan.ReferenceSensorData[2].ToString();
                     if (Device.DevInfo.ModelType == "F")
@@ -4485,9 +5232,12 @@ namespace ISC_Win_WinForm_GUI
             }
 
             // Measure Time field name & value
-            CSV[15, 0] = PreStr + "Total Measurement Time in sec:";
-            TimeSpan ts = new TimeSpan(TimeScanEnd.Ticks - TimeScanStart.Ticks);
-            CSV[15, 1] = ts.TotalSeconds.ToString();
+            if (!isFromDatFile)
+            {
+                CSV[15, 0] = PreStr + "Total Measurement Time in sec:";
+                TimeSpan ts = new TimeSpan(TimeScanEnd.Ticks - TimeScanStart.Ticks);
+                CSV[15, 1] = ts.TotalSeconds.ToString();
+            }
 
             // Coefficients filed names & valus
             CSV[18, 7] = PreStr + "Shift Vector Coefficients:";
@@ -4506,9 +5256,11 @@ namespace ISC_Win_WinForm_GUI
             CSV[19, 1] = !String.IsNullOrEmpty(Scan.ScanSerialNumber) ? Scan.ScanSerialNumber : Device.DevInfo.SerialNumber;
             CSV[19, 2] = "(" + ((Device.DevInfo.Manufacturing_SerialNumber.Contains("70UB1") || Device.DevInfo.Manufacturing_SerialNumber.Contains("95UB1")) ? Device.DevInfo.Manufacturing_SerialNumber : "N/A") + ")";
             CSV[20, 0] = PreStr + "GUI Version:";
+            CSV[20, 2] = PreStr + "Revision:";
+            CSV[20, 3] = PreStr + this.Revision;
             String GUIRev = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             GUIRev = GUIRev.Substring(0, GUIRev.LastIndexOf('.'));
-            CSV[20, 1] = GUIRev + "b0422"; //Beta
+            CSV[20, 1] = GUIRev;
             CSV[20, 7] = PreStr + "Versions (Cal/Ref/Cfg):";
             CSV[20, 8] = Device.DevInfo.CalRev.ToString();
             CSV[20, 9] = Device.DevInfo.RefCalRev.ToString();
@@ -4553,7 +5305,7 @@ namespace ISC_Win_WinForm_GUI
             {
                 buf = "";
                 for (int j = 0; j < 15; j++)
-                    buf += (CSV[i, j] + ",");
+                    buf += (CSV[i, j] + CSV_Delimiter);
                 sw.WriteLine(buf);
             }
 
@@ -4573,6 +5325,9 @@ namespace ISC_Win_WinForm_GUI
         {
             UserCancelScan = false;  // Clear this flag before scanning
             SDK.IsConnectionChecking = false;
+            if (Button_Scan.Text == "Scan")
+                ScanErrorCounts = 0;
+
             if (NewConfig == true || EditConfig == true)
             {
                 EditConfig = false;
@@ -4583,7 +5338,7 @@ namespace ISC_Win_WinForm_GUI
             if (Device.IsConnected())
             {
                 Button_ClearAllErrors_Click(this, null); // Clear previous scan error
-                if (Button_Scan.Text == "Continuous")
+                if (Button_Scan.Text == "Continuous" || Button_Scan.Text == "Scan Next")
                 {
                     button_ExitCont.Visible = false;
                     tabScanPage.TabPages[0].Enabled = true;
@@ -4591,7 +5346,15 @@ namespace ISC_Win_WinForm_GUI
                     tabControl_MainFunctions.TabPages[1].Enabled = true;
                 }
                 else
+                {
                     TargetScanCounts = int.Parse(Text_ContScan.Text); // Set the target scan number
+                }
+
+                if (Text_ContScan.Text == "1" && Button_Scan.Text != "Scan Next")
+                {
+                    CheckBox_SaveOneCSV.Checked = false;
+                    CheckBox_AverageCSV.Checked = false;
+                }
 
                 if (CheckBox_SaveOneCSV.Checked)
                     SaveOneCSVFile = true;
@@ -4640,11 +5403,19 @@ namespace ISC_Win_WinForm_GUI
             AverageIntensity.Clear();
             AverageAbsorbance.Clear();
 
+            if (TargetScanCounts > 1)
+            {
+                string msg = string.Format("Continuous Scan Terminated.\n\nSuccess: {0}\nFailed: {1}", ScannedCounts - ScanErrorCounts, ScanErrorCounts);
+                MessageBox.Show(msg, "Scan Completed", MessageBoxButtons.OK);
+            }
+
             ScannedCounts = 0;
             TargetScanCounts = 1;
             Text_ContScan.Text = TargetScanCounts.ToString();
             Label_ContScan.Text = String.Empty;
             Button_Scan.Text = "Scan";
+            Manual_ContScan_UI_Con(false);
+            button_ClearPlots.Enabled = true;
 
             tabScanPage.TabPages[0].Enabled = true;
             tabScanPage.TabPages[1].Enabled = true;
@@ -4687,35 +5458,55 @@ namespace ISC_Win_WinForm_GUI
 
         private void bwScan_DoScan(object sender, DoWorkEventArgs e)
         {
-            DBG.WriteLine("Performing scan... Remained scans: {0}", TargetScanCounts - ScannedCounts);
-            logFile.InfoFormat("Performing scan... Remained scans: {0}", TargetScanCounts - ScannedCounts);
-            TimeScanStart = DateTime.Now;
             List<object> arguments = new List<object>();
+            int result = 0;
 
-            if (Scan.PerformScan(ReferenceSelect) == 0)
+            if (RadioButton_LampStableTime.Checked && TextBox_LampStableTime.Text != "625")
             {
-                DBG.WriteLine("Scan completed!");
-                logFile.Info("Scan completed!");
-                TimeScanEnd = DateTime.Now;
-                TimeSpan ts = new TimeSpan(TimeScanEnd.Ticks - TimeScanStart.Ticks);
+                result = Scan.SetLampDelay(UInt32.Parse(TextBox_LampStableTime.Text));
+                if (result < 0)
+                    result = -10;
+                DBG.WriteLine($"Set lamp stable time before scan: {TextBox_LampStableTime.Text}ms");
+                logFile.InfoFormat($"Set lamp stable time before scan: {TextBox_LampStableTime.Text}ms");
+            }
 
-                arguments.Add("pass");
-                arguments.Add(ts);
-                e.Result = arguments;
+            if (result == 0)
+            {
+                DBG.WriteLine("Performing scan... Remained scans: {0}", TargetScanCounts - ScannedCounts);
+                logFile.InfoFormat("Performing scan... Remained scans: {0}", TargetScanCounts - ScannedCounts);
+                TimeScanStart = DateTime.Now;
+                IsSavedScanData = false;
+
+                if ((result = Scan.PerformScan(ReferenceSelect)) == 0)
+                {
+                    DBG.WriteLine("Scan completed!");
+                    logFile.Info("Scan completed!");
+                    TimeScanEnd = DateTime.Now;
+                    TimeSpan ts = new TimeSpan(TimeScanEnd.Ticks - TimeScanStart.Ticks);
+
+                    arguments.Add(result);
+                    arguments.Add(ts);
+                }
+                else
+                {
+                    arguments.Add(result);
+                    arguments.Add(TimeSpan.Zero);
+                }
             }
             else
             {
-                arguments.Add("failed");
+                arguments.Add(result);
                 arguments.Add(TimeSpan.Zero);
-                e.Result = arguments;
             }
+            e.Result = arguments;
+
             Thread.Sleep(200);
         }
 
         private void bwScan_DoSacnCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             List<object> arguments = e.Result as List<object>;
-            string result = (string)arguments[0];
+            int result = (int)arguments[0];
             TimeSpan ts = (TimeSpan)arguments[1];
 
             Byte pga = Scan.PGA;  // If PGA is auto, it can only read the current value after scanning.
@@ -4724,27 +5515,39 @@ namespace ISC_Win_WinForm_GUI
 
             ScannedCounts++;
 
-            if (result != "failed")
+            if (result == SDK.RETURN_PASS)
             {
-                SpectrumPlot(false);
+                if (tabScanPage.SelectedIndex == 2)
+                    IsSavedScanData = false;
 
                 ComboBox_PGAGain.SelectedItem = pga.ToString();
                 Label_ScanStatus.Text = "Total Scan Time: " + String.Format("{0:0.000}", ts.TotalSeconds) + " secs.";
 
-                if (ReferenceSelect != Scan.SCAN_REF_TYPE.SCAN_REF_NEW)  // Save scan results except new reference selection
-                    SaveToFiles();
-                else if (Scan.IsLocalRefExist)
+                if (ReferenceSelect == Scan.SCAN_REF_TYPE.SCAN_REF_NEW)  // Save scan results except new reference selection
                 {
-                    Scan.GetScanResult();
+                    isPrevScanReference = isScanReference;
+                    isScanReference = true;
+                }
+                else
+                {
+                    SaveToFiles();
+                    isPrevScanReference = isScanReference;
+                    isScanReference = false;
+                }
+
+                if (isScanReference && Scan.IsLocalRefExist)
+                {
                     Byte[] time = Scan.ReferenceScanDateTime;
                     if (time[0] != 0)
                     {
-                        pre_ref_time = "Previous reference last set on : 20" + time[0].ToString() + "/" + time[1].ToString() + "/" + time[2].ToString()
-                        + " @ " + time[3].ToString() + ":" + time[4].ToString() + ":" + time[5].ToString();
+                        pre_ref_time = "Previous reference was set: 20" + time[0].ToString() + "/" + time[1].ToString() + "/" + time[2].ToString()
+                        + " T " + time[3].ToString() + ":" + time[4].ToString() + ":" + time[5].ToString();
+                        int localRefAutoPGAFlag = Scan.IsLocalRefScanAutoPGA();
+                        if (localRefAutoPGAFlag == 1)
+                            pre_ref_time += " (AutoPGA)";
+                        else if (localRefAutoPGAFlag == -1)
+                            pre_ref_time += " (FixedPGA)";
                     }
-                    RadioButton_RefPre.Enabled = true;
-                    RadioButton_RefPre.Checked = true;
-                    RadioButton_RefNew.Checked = false;
                 }
 
                 if (TargetScanCounts - ScannedCounts == 0)
@@ -4753,47 +5556,72 @@ namespace ISC_Win_WinForm_GUI
                     Text_ContScan.Text = (TargetScanCounts - ScannedCounts).ToString();
                 Label_ContScan.Text = "(" + ScannedCounts.ToString() + "/" + TargetScanCounts.ToString() + ")";
 
+                if (!(Scan.IsLocalRefExist && ReferenceSelect == Scan.SCAN_REF_TYPE.SCAN_REF_NEW))
+                    Scan.GetScanResult(IsSavedScanData);
+
+                if (TargetScanCounts == 1 || Device.ErrStatus == 0)
+                {
+
+                    if (isPrevScanReference)
+                        Clear_Chart(true);
+
+                    SpectrumPlot();
+
+                    if (isScanReference)
+                        Scan.ClearData();
+                }
+
+                if (TargetScanCounts > 1 && Device.ErrStatus != 0)
+                {
+                    Device.ResetErrorStatus();
+                    ScanErrorCounts++;
+                }
+
                 if ((TargetScanCounts - ScannedCounts) > 0 && checkBox_StopOnError.Checked && Device.ErrStatus != 0)
                 {
                     UserCancelScan = true;
                     SDK.IsConnectionChecking = true;
                     ProgressWindowCompleted();
 
+                    Message.ShowError("Scan error found.\n\nStopped continuous scan!");
+
+                    if (TargetScanCounts > 1)
+                    {
+                        ScanErrorCounts = 1;
+                        string msg = string.Format("Continuous Scan Terminated.\n\nSuccess: {0}\nFailed: {1}", ScannedCounts - ScanErrorCounts, ScanErrorCounts);
+                        MessageBox.Show(msg, "Scan Completed", MessageBoxButtons.OK);
+                    }
+
                     ScannedCounts = 0;
                     Button_Scan.Text = "Scan";
+                    button_ExitCont.Visible = false;
+                    Manual_ContScan_UI_Con(false);
+                    button_ClearPlots.Enabled = true;
                     Text_ContScan.Text = (TargetScanCounts - ScannedCounts).ToString();
                     Label_ContScan.Text = "(" + ScannedCounts.ToString() + "/" + TargetScanCounts.ToString() + ")";
-
-                    Message.ShowError("Scan error found.\n\nStopped continuous scan!");
                 }
                 else if ((TargetScanCounts - ScannedCounts) > 0 && !UserCancelScan)
                 {
-                    if (int.TryParse(Text_ContDelay.Text, out int DelaySec) == false)
-                        DelaySec = 0;
-
-                    DateTime ScanCurrent = DateTime.Now;
-                    while (DateTime.Now < ScanCurrent.AddSeconds(DelaySec))
+                    if (checkBox_AutoScan.Checked)
                     {
-                        Application.DoEvents();
-                    }
+                        if (int.TryParse(Text_ContDelay.Text, out int DelaySec) == false)
+                            DelaySec = 0;
 
-                    if (CheckBox_AutoGain.Checked == false)
-                    {
-                        if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2 && CheckBox_LampOn.Checked == true)
-                            Scan.SetPGAGain(pga);
-                        else
-                            Scan.SetFixedPGAGain(true, pga);
+                        DateTime ScanCurrent = DateTime.Now;
+                        while (DateTime.Now < ScanCurrent.AddSeconds(DelaySec))
+                        {
+                            Application.DoEvents();
+                        }
+
+                        ProgressWindowContentUpdate("Continuous scan in progress... \r\nPlease Wait!");
+                        bwScan.RunWorkerAsync();
                     }
                     else
                     {
-                        if (GetFW_LEVEL() < FW_LEVEL.LEVEL_2)
-                            Scan.SetFixedPGAGain(false, pga);
-                        else
-                            Scan.SetFixedPGAGain(true, 0); // This is set to auto PGA
+                        Button_Scan.Text = "Scan Next";
+                        button_ExitCont.Visible = true;
+                        ProgressWindowCompleted();
                     }
-
-                    ProgressWindowContentUpdate("Continuous scan in progress... \r\nPlease Wait!");
-                    bwScan.RunWorkerAsync();
                 }
                 else
                 {
@@ -4824,6 +5652,12 @@ namespace ISC_Win_WinForm_GUI
                         }
                         else
                         {
+                            if (TargetScanCounts > 1)
+                            {
+                                string msg = string.Format("Continuous Scan Terminated.\n\nSuccess: {0}\nFailed: {1}", ScannedCounts - ScanErrorCounts, ScanErrorCounts);
+                                MessageBox.Show(msg, "Scan Completed", MessageBoxButtons.OK);
+                            }
+
                             OneScanFileName = String.Empty;
                             AverageScanFileName = String.Empty;
                             AverageIntensity.Clear();
@@ -4834,12 +5668,22 @@ namespace ISC_Win_WinForm_GUI
                             Text_ContScan.Text = TargetScanCounts.ToString();
                             Label_ContScan.Text = String.Empty;
                             Button_Scan.Text = "Scan";
+                            button_ExitCont.Visible = false;
+                            Manual_ContScan_UI_Con(false);
+                            button_ClearPlots.Enabled = true;
                         }
                     }
                     else
                     {
+                        if (TargetScanCounts > 1)
+                        {
+                            string msg = string.Format("Continuous Scan Finished.\n\nSuccess: {0}\nFailed: {1}", TargetScanCounts - ScanErrorCounts, ScanErrorCounts);
+                            MessageBox.Show(msg, "Scan Completed", MessageBoxButtons.OK);
+                        }
                         ScannedCounts = 0;
                         Button_Scan.Text = "Scan";
+                        Manual_ContScan_UI_Con(false);
+                        button_ClearPlots.Enabled = true;
                     }
                 }
             }
@@ -4851,10 +5695,51 @@ namespace ISC_Win_WinForm_GUI
 
                 ScannedCounts = 0;
                 Button_Scan.Text = "Scan";
+                Manual_ContScan_UI_Con(false);
                 Text_ContScan.Text = (TargetScanCounts - ScannedCounts).ToString();
                 Label_ContScan.Text = "(" + ScannedCounts.ToString() + "/" + TargetScanCounts.ToString() + ")";
 
-                Message.ShowError("Scan Failed!");
+                switch (result)
+                {
+                    case -1:
+                        Message.ShowError("Scan failed!");
+                        break;
+                    case -2:
+                        Message.ShowError("The scan data is invalid and cannot be interpreted!");
+                        break;
+                    case -3:
+                        Message.ShowError("Insufficient memory!");
+                        break;
+                    case -4:
+                        Message.ShowError("The scan data format is not TPL format!");
+                        break;
+                    case -5:
+                        Message.ShowError("The config of scan data is invalid!");
+                        break;
+                    case -6:
+                        Message.ShowError("The data pointer in the interpretation is NULL!");
+                        break;
+                    case -7:
+                        Message.ShowError("The hardware (U21 ~ U28) may be damaged!");
+                        break;
+                    case -8:
+                        Message.ShowError("Get scan data failed!");
+                        break;
+                    case -9:
+                        Message.ShowError("Set PGA failed!");
+                        break;
+                    case -10:
+                        Message.ShowError("Set lamp delay time failed!");
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (Scan.IsLocalRefExist && !RadioButton_RefFac.Checked)
+            {
+                RadioButton_RefPre.Enabled = true;
+                RadioButton_RefPre.Checked = true;
             }
         }
         #endregion
@@ -4874,6 +5759,12 @@ namespace ISC_Win_WinForm_GUI
                 Button_Get_BLE_Display_Name_Click(null, null);
 
             pOutBuf.Clear();
+
+            if (++ModelNameGet_Click_Counts > 6)
+            {
+                this.Button_ModelNameSet.Enabled = true;
+                this.Button_ModelNameSet.Visible = true;
+            }
         }
 
         private void Button_ModelNameSet_Click(object sender, EventArgs e)
@@ -4917,6 +5808,9 @@ namespace ISC_Win_WinForm_GUI
             }
             if (TextBox_BLE_Display_Name.Text != "")
                 Button_Get_BLE_Display_Name_Click(null, null);
+
+            this.Button_ModelNameSet.Enabled = false;
+            this.Button_ModelNameSet.Visible = false;
         }
         #endregion
         #region Serial Number
@@ -4955,6 +5849,9 @@ namespace ISC_Win_WinForm_GUI
             }
             if (TextBox_BLE_Display_Name.Text != "")
                 Button_Get_BLE_Display_Name_Click(null, null);
+
+            this.Button_SerialNumberSet.Enabled = false;
+            this.Button_SerialNumberSet.Visible = false;
         }
 
         private void Button_SerialNumberGet_Click(object sender, EventArgs e)
@@ -4970,6 +5867,12 @@ namespace ISC_Win_WinForm_GUI
                 Button_Get_BLE_Display_Name_Click(null, null);
 
             pOutBuf.Clear();
+
+            if(++SerialNumberGet_Click_Counts > 6)
+            {
+                this.Button_SerialNumberSet.Enabled = true;
+                this.Button_SerialNumberSet.Visible = true;
+            }
         }
         #endregion
         #region Date and Time
@@ -5155,7 +6058,7 @@ namespace ISC_Win_WinForm_GUI
 
         private void Button_TivaFWBrowse_Click(object sender, EventArgs e)
         {
-            OpenFileDialog dlg = new OpenFileDialog
+            System.Windows.Forms.OpenFileDialog dlg = new System.Windows.Forms.OpenFileDialog
             {
                 InitialDirectory = (Tiva_FWDir == String.Empty) ? (Directory.GetCurrentDirectory()) : (Tiva_FWDir),
                 FileName = "",                  // Default file name
@@ -5234,7 +6137,7 @@ namespace ISC_Win_WinForm_GUI
             {
                 SDK.AutoSearch = true;
                 SDK.IsEnableNotify = true;
-                MessageBox.Show("Device dose not exist or image file path error!", "Error");
+                MessageBox.Show("Device does not exist or image file path error!", "Error");
                 SDK.IsConnectionChecking = true;
                 ProgressBar_TivaFWUpdateStatus.Value = 0;
             }
@@ -5297,10 +6200,8 @@ namespace ISC_Win_WinForm_GUI
 
             if (ret == 0)
             {
-                SDK.IsEnableNotify = true;
                 String text = "Tiva FW updated successfully!";
                 MessageBox.Show(text, "Success");
-                Device.Open(null);
             }
             else
             {
@@ -5342,23 +6243,43 @@ namespace ISC_Win_WinForm_GUI
                         text = "Unable to open Device Firmware Upgrade device. Check the driver installed and try again!";
                         MessageBox.Show(text, "Error");
                         break;
+                    case -10:
+                        text = "This firmware is not for the device model. Please make sure you have a correct one!";
+                        MessageBox.Show(text, "Error");
+                        break;
                     default:
                         text = "Unknown error occured!";
                         MessageBox.Show(text, "Error");
                         break;
                 }
+
             }
-            //SDK.IsEnableNotify = true;
-            SDK.AutoSearch = true;
-            SDK.IsConnectionChecking = true;
             ProgressBar_TivaFWUpdateStatus.Value = 0;
+
+            String pbString = "Please wait few seconds for device reboot!\r\n";
+            ProgressWindowStart("Device rebooting", pbString, false);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string doting = string.Format("  {0}  ", (6 - i).ToString());
+                ProgressWindowContentUpdate(pbString + doting);
+                for (int j = 0; j < 5; j++)
+                {
+                    doting = "<< " + doting + " >>";
+                    ProgressWindowContentUpdate(pbString + doting);
+                    SpinWait.SpinUntil(() => false, 200);
+                }
+            }
+            ProgressWindowCompleted();
+            SDK.IsEnableNotify = true;
+            Device.Open(null);
         }
         #endregion
         #region DLPC150 FW Update
         //DLPC150 FW Update
         private void Button_DLPC150FWBrowse_Click(object sender, EventArgs e)
         {
-            OpenFileDialog dlg = new OpenFileDialog
+            System.Windows.Forms.OpenFileDialog dlg = new System.Windows.Forms.OpenFileDialog
             {
                 InitialDirectory = (DLPC_FWDir == String.Empty) ? (Directory.GetCurrentDirectory()) : (DLPC_FWDir),
                 FileName = "",              // Default file name
@@ -5377,8 +6298,8 @@ namespace ISC_Win_WinForm_GUI
         {
             if (Device.IsConnected() && TextBox_DLPC150FWPath.Text != "")
             {
-                ControlAllControls(this, false);
-
+                //ControlAllControls(this, false);
+                this.Enabled = false;
                 SDK.AutoSearch = false;
                 SDK.IsEnableNotify = false;
                 SDK.IsConnectionChecking = false;
@@ -5526,6 +6447,24 @@ namespace ISC_Win_WinForm_GUI
                 TextBox_ShiftVectCoeff0.Text = Device.Calib_Coeffs.ShiftVectorCoeffs[0].ToString();
                 TextBox_ShiftVectCoeff1.Text = Device.Calib_Coeffs.ShiftVectorCoeffs[1].ToString();
                 TextBox_ShiftVectCoeff2.Text = Device.Calib_Coeffs.ShiftVectorCoeffs[2].ToString();
+                
+                try
+                {
+                    if (Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[0] - std_calib_coeffs_PixelToWavelengthCoeffs_0) / std_calib_coeffs_PixelToWavelengthCoeffs_0) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[1] - std_calib_coeffs_PixelToWavelengthCoeffs_1) / std_calib_coeffs_PixelToWavelengthCoeffs_1) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.PixelToWavelengthCoeffs[2] - std_calib_coeffs_PixelToWavelengthCoeffs_2) / std_calib_coeffs_PixelToWavelengthCoeffs_2) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[0] - std_calib_coeffs_ShiftVectorCoeffs_0) / std_calib_coeffs_ShiftVectorCoeffs_0) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[1] - std_calib_coeffs_ShiftVectorCoeffs_1) / std_calib_coeffs_ShiftVectorCoeffs_1) < calib_coeffs_diff_limit &&
+                        Math.Abs((Device.Calib_Coeffs.ShiftVectorCoeffs[2] - std_calib_coeffs_ShiftVectorCoeffs_2) / std_calib_coeffs_ShiftVectorCoeffs_2) < calib_coeffs_diff_limit)
+                    {
+                        Message.ShowWarning("The device's coefficients are the same as generic setting.\n\n" +
+                            "This usually means the device might be un-calibrated or recovered from an EEPROM data corrupted.\n\n" +
+                            "You can try to Restore Factory Calibration Data\n" +
+                            "Or\n" +
+                            "Please contact ISC for supporting.");
+                    }
+                }
+                catch { }
             }
             else
             {
@@ -5702,13 +6641,7 @@ namespace ISC_Win_WinForm_GUI
                 int ret;
                 StringBuilder pOutBuf = new StringBuilder(128);
                 if (IsActivated && (ret = Device.ReadBleDispName(pOutBuf)) == SDK.RETURN_PASS)
-                {
-                    if (pOutBuf.ToString().Length > 20)
-                        Label_BleNameValue.Font = new Font(Label_BleNameValue.Font.FontFamily, 7, Label_BleNameValue.Font.Style);
-                    else
-                        Label_BleNameValue.Font = new Font(Label_BleNameValue.Font.FontFamily, 9, Label_BleNameValue.Font.Style);
                     Label_BleNameValue.Text = pOutBuf.ToString();
-                }
                 else
                     Label_BleNameValue.Text = "NA";
                 if (!IsActivated)
@@ -5845,7 +6778,7 @@ namespace ISC_Win_WinForm_GUI
                     Label_SensorLampVM1.Visible = true;
                     Label_SensorLampVM1Value.Visible = true;
 
-                    Label_SensorLampVM1.Text = "Lamp Intensity";
+                    Label_SensorLampVM1.Text = "Lamp Indicator";
                 }
             }
         }
@@ -5862,7 +6795,7 @@ namespace ISC_Win_WinForm_GUI
                 return;
             }
 
-            DialogResult result = Message.ShowQuestion("Do you want to set it?", "Key", MessageBoxButtons.YesNo);
+            DialogResult result = Message.ShowQuestion("Do you want to set it?\n\nThe GUI needs to re-launch for verification.", "Key", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
                 SystemBusy(true);
@@ -5874,47 +6807,9 @@ namespace ISC_Win_WinForm_GUI
                     catch { ByteKey[i] = 0; }
                 }
 
+                bool prevActState = IsActivated;
                 Device.SetActivationKey(ByteKey);
-
-                if (IsActivated)
-                {
-                    String serNum = "", aKey = "";
-                    List<ActivationKey> ItemsList = new List<ActivationKey>();
-                    ActivationKey ListViewData = new ActivationKey();
-
-                    foreach (ActivationKey row in ReadAKeyFromFile())
-                    {
-                        // We need to remove the old key info, just skip it
-                        if (row.SerNum == Device.DevInfo.SerialNumber)
-                            continue;
-                        // Save all key info into list
-                        ActivationKey item = new ActivationKey(serNum, aKey);
-                        item.SerNum = row.SerNum;
-                        item.AKey = row.AKey;
-                        ItemsList.Add(item);
-                    }
-
-                    ActivationKey newItem = new ActivationKey(serNum, aKey);
-                    newItem.SerNum = Device.DevInfo.SerialNumber;
-                    newItem.AKey = TextBox_Key.Text;
-                    ItemsList.Add(newItem);
-
-                    SaveAKeyToFile(ItemsList);
-
-                    label_ActivateStatus.Text = "Activated!";
-                    // Self refresh device information
-                    GetDeviceInfo();
-                    SystemBusy(false);
-                    GUI_Handler((int)MainWindow.GUI_State.KEY_ACTIVATE);
-                }
-                else
-                {
-                    label_ActivateStatus.Text = "Not activated!";
-                    label_DevInfoLampUsageValue.Text = "NA";
-                    SystemBusy(false);
-                    GUI_Handler((int)MainWindow.GUI_State.KEY_NOT_ACTIVATE);
-                }
-                CheckLampFuncUseful();
+                Application.Restart();
             }
         }
 
@@ -5922,7 +6817,7 @@ namespace ISC_Win_WinForm_GUI
         {
             if (IsActivated)
             {
-                label_ActivateStatus.Text = "Activated!";
+                label_ActivateStatus.Text = "Activated";
                 GUI_Handler((int)MainWindow.GUI_State.KEY_ACTIVATE);
             }
             else
@@ -6031,41 +6926,9 @@ namespace ISC_Win_WinForm_GUI
 
         private void bwRefScanProgress_DoWork(object sender, DoWorkEventArgs e)
         {
-            String Model = (!String.IsNullOrEmpty(Device.DevInfo.ModelName)) ? Device.DevInfo.ModelName : String.Empty;
-            Model = (Model != String.Empty) ? Model.Substring(Model.LastIndexOf('-') + 1) : String.Empty;
-
             Scan.SetLamp(Scan.LAMP_CONTROL.AUTO);
             tmpCfg = ScanConfig.GetCurrentConfig();  // Backup current config before update reference
-            ScanConfig.SlewScanConfig scanCfg = new ScanConfig.SlewScanConfig
-            {
-                section = new ScanConfig.SlewScanSection[5]
-            };
-
-            scanCfg.head.config_name = "UserReference";
-            scanCfg.head.scan_type = 2;
-            scanCfg.head.num_sections = 1;
-            if (Model == "R11")
-            {
-                scanCfg.head.num_repeats = 12;
-
-                scanCfg.section[0].section_scan_type = 1;
-                scanCfg.section[0].wavelength_start_nm = Device.DevInfo.MinWavelength;
-                scanCfg.section[0].wavelength_end_nm = Device.DevInfo.MaxWavelength;
-                scanCfg.section[0].width_px = 9;
-                scanCfg.section[0].num_patterns = 160;
-                scanCfg.section[0].exposure_time = 0;
-            }
-            else
-            {
-                scanCfg.head.num_repeats = 30;
-
-                scanCfg.section[0].section_scan_type = 0;
-                scanCfg.section[0].wavelength_start_nm = Device.DevInfo.MinWavelength;
-                scanCfg.section[0].wavelength_end_nm = Device.DevInfo.MaxWavelength;
-                scanCfg.section[0].width_px = 6;
-                scanCfg.section[0].num_patterns = 228;
-                scanCfg.section[0].exposure_time = 0;
-            }
+            ScanConfig.SlewScanConfig scanCfg = ScanConfig.GetFactoryReferenceConfig();
 
             int ret = ScanConfig.SetScanConfig(scanCfg);
             if (ret != 0)
@@ -6184,23 +7047,27 @@ namespace ISC_Win_WinForm_GUI
                                 MessageBox.Show(text, "Error");
                                 break;
                             case -2:
-                                text = "Factory reference data restore FAILED!\n\nBackup directory not found";
+                                text = "Factory reference data restore FAILED!\n\nBackup directory does not found.";
                                 MessageBox.Show(text, "Error");
                                 break;
                             case -3:
-                                text = "Factory reference data restore FAILED!\n\nRead file error";
+                                text = "Factory reference data restore FAILED!\n\nRead file error.";
                                 MessageBox.Show(text, "Error");
                                 break;
                             case -4:
-                                text = "Factory reference data restore FAILED!\n\nReference data currupted";
+                                text = "Factory reference data restore FAILED!\n\nReference data currupted.";
                                 MessageBox.Show(text, "Error");
                                 break;
                             case -5:
-                                text = "Factory reference data restore FAILED!\n\nDevice communcation error";
+                                text = "Factory reference data restore FAILED!\n\nDevice communcation error.";
                                 MessageBox.Show(text, "Error");
                                 break;
                             case -6:
-                                text = "Factory reference data restore FAILED!\n\nData was NOT the original factory reference data";
+                                text = "Factory reference data restore FAILED!\n\nData was NOT the original factory reference data.";
+                                MessageBox.Show(text, "Error");
+                                break;
+                            case -7:
+                                text = "Factory reference data restore FAILED!\n\nBackup file does not found.";
                                 MessageBox.Show(text, "Error");
                                 break;
                         }
@@ -6332,10 +7199,6 @@ namespace ISC_Win_WinForm_GUI
 
             if ((ret = Device.ReadBleDispName(pOutBuf)) == SDK.RETURN_PASS)
             {
-                if (pOutBuf.ToString().Length > 20)
-                    Label_BleNameValue.Font = new Font(Label_BleNameValue.Font.FontFamily, 7, Label_BleNameValue.Font.Style);
-                else
-                    Label_BleNameValue.Font = new Font(Label_BleNameValue.Font.FontFamily, 9, Label_BleNameValue.Font.Style);
                 Label_BleNameValue.Text = pOutBuf.ToString();
                 TextBox_BLE_Display_Name.Text = pOutBuf.ToString();
             }
@@ -6410,8 +7273,12 @@ namespace ISC_Win_WinForm_GUI
             }
         }
 
+        private int lastTabScanPageSelection = 0;
         private void tabScanPage_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (Button_Scan.Text == "Scan Next")
+                button_ExitCont.PerformClick();
+
             switch (tabScanPage.SelectedIndex)
             {
                 case 0:
@@ -6420,34 +7287,79 @@ namespace ISC_Win_WinForm_GUI
                             RadioButton_RefNew_CheckedChanged(this, null);
                         else if (RadioButton_RefPre.Checked && !Scan.IsLocalRefExist)
                             RadioButton_RefNew.PerformClick();
-
-                        if (Check_Overlay.Checked)
+                        if (lastTabScanPageSelection == 2)
+                        {
+                            Device.Information();
+                            Scan.ClearData();
+                            Clear_Chart(true);
+                            Check_Overlay.CheckedChanged -= Check_Overlay_CheckedChanged;
                             Check_Overlay.Checked = false;
-
+                            Check_Overlay.Visible = true;
+                            Check_Overlay.CheckedChanged += Check_Overlay_CheckedChanged;
+                        }
+                        Button_Scan.Visible = true;
+                        IsSavedScanData = false;
                         break;
                     }
                 case 1:
                     {
+                        if (lastTabScanPageSelection == 2)
+                        {
+                            Device.Information();
+                            Scan.ClearData();
+                            Clear_Chart(true);
+                            Check_Overlay.CheckedChanged -= Check_Overlay_CheckedChanged;
+                            Check_Overlay.Checked = false;
+                            Check_Overlay.CheckedChanged += Check_Overlay_CheckedChanged;
+                        }
+                        Check_Overlay.Visible = true;
+                        Button_Scan.Visible = true;
+                        IsSavedScanData = false;
+                        if (TargetCfg_SelIndex == -1 && TargetCfg_Last_SelIndex == -1)
+                            TargetCfg_SelIndex = 0;
+                        else if (TargetCfg_SelIndex == -1 && TargetCfg_Last_SelIndex != -1)
+                            TargetCfg_SelIndex = TargetCfg_Last_SelIndex;
+                        else
+                            TargetCfg_Last_SelIndex = TargetCfg_SelIndex;
+                        if (LocalCfg_SelIndex == -1 && LocalCfg_Last_SelIndex == -1)
+                            LocalCfg_SelIndex = 0;
+                        else if (LocalCfg_SelIndex == -1 && LocalCfg_Last_SelIndex != -1)
+                            LocalCfg_SelIndex = LocalCfg_Last_SelIndex;
+                        else
+                            LocalCfg_Last_SelIndex = LocalCfg_SelIndex;
                         break;
                     }
                 case 2:
                     {
-                        if (Check_Overlay.Checked)
-                            Check_Overlay.Checked = false;
-                        Check_Overlay.Enabled = true;
+                        Scan.ClearData();
+                        Clear_Chart(true);
+                        RadioButton_Reflectance.Enabled = true;
+                        RadioButton_Absorbance.Enabled = true;
+                        RadioButton_Reference.Enabled = true;
+                        RadioButton_Intensity.Enabled = true;
+                        Button_Scan.Visible = false;
+                        Check_Overlay.CheckedChanged -= Check_Overlay_CheckedChanged;
+                        Check_Overlay.Checked = true;
+                        Check_Overlay.Visible = false;
+                        Check_Overlay.CheckedChanged += Check_Overlay_CheckedChanged;
+                        IsSavedScanData = true;
                         SavedScan_RefreshDataGridView();
-                        break;
-                    }
-                case 3:
-                    {
                         break;
                     }
                 default:
                     break;
             }
 
-            if (NewConfig == true || EditConfig == true)
+            if (checkBox_tooltip.Checked)
+            {
+                checkBox_tooltip.Checked = false;
+                checkBox_tooltip.Checked = true;
+            }
+
+            if (lastTabScanPageSelection != 1 && (NewConfig == true || EditConfig == true))
                 Button_CfgCancel_Click(this, e);
+
+            lastTabScanPageSelection = tabScanPage.SelectedIndex;
         }
 
         private void UI_no_connection()
@@ -6455,7 +7367,7 @@ namespace ISC_Win_WinForm_GUI
             ControlAllControls(this, false);
             ControlSingleControl(panel_Saved_Scan, true);
             ControlPanelContents(panel_Saved_Scan, true);
-            ControlSingleControl(dataGridView_savescan.Controls["SelectAll"], true);
+            //ControlSingleControl(dataGridView_savescan.Controls["SelectAll"], true);
             ControlSingleControl(MyChart, true);
             ControlSingleControl(RadioButton_Reflectance, true);
             ControlSingleControl(RadioButton_Absorbance, true);
@@ -6470,6 +7382,10 @@ namespace ISC_Win_WinForm_GUI
             ControlSingleControl(Label_TivaFWName, true);
             ControlSingleControl(TextBox_TivaFWPath, true);
             ControlSingleControl(Button_TivaFWBrowse, true);
+            ControlSingleControl(label_GUIVersion, true);
+            ControlSingleControl(lb_GUI_Revision, true);
+            ControlSingleControl(label_DisableUACAlert, true);
+            ControlSingleControl(button_disableUACAlert, true);
             ListBox_LocalCfgs.BackColor = System.Drawing.Color.White;
             ListBox_TargetCfgs.BackColor = System.Drawing.Color.White;
         }
@@ -6479,19 +7395,29 @@ namespace ISC_Win_WinForm_GUI
             ControlAllControls(this, true);
             if (RadioButton_RefNew.Checked)
             {
+                label_ContinuousMode.Visible = false;
                 GroupBox_ContScan.Enabled = false;
+                RadioButton_Reflectance.Enabled = false;
+                RadioButton_Absorbance.Enabled = false;
+                RadioButton_Reference.Enabled = false;
+                RadioButton_LampOff.Enabled = false;
+                Check_Overlay.Enabled = false;
+                GroupBox_SaveScan.Enabled = false;
             }
             if (!RadioButton_RefNew.Checked && (int.TryParse(Text_ContScan.Text, out int repeat) && repeat > 1))
             {
+                Manual_ContScan_UI_Con(!checkBox_AutoScan.Checked);
                 CheckBox_SaveOneCSV.Enabled = true;
                 CheckBox_AverageCSV.Enabled = true;
-                checkBox_StopOnError.Enabled = true;
+                checkBox_AutoScan.Enabled = true;
             }
             else
             {
+                Manual_ContScan_UI_Con(Button_Scan.Text == "Scan Next");
                 CheckBox_SaveOneCSV.Enabled = false;
                 CheckBox_AverageCSV.Enabled = false;
                 checkBox_StopOnError.Enabled = false;
+                checkBox_AutoScan.Enabled = false;
             }
             CheckBox_FileNamePrefix_CheckedChanged(CheckBox_FileNamePrefix, null);
             CheckLampFuncUseful();
@@ -6501,6 +7427,9 @@ namespace ISC_Win_WinForm_GUI
 
         private void tabControl_MainFunctions_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (Button_Scan.Text == "Scan Next")
+                button_ExitCont_Click(this, e);
+
             if (tabControl_MainFunctions.SelectedIndex != 0)
             {
                 if (NewConfig == true || EditConfig == true)
@@ -6565,26 +7494,41 @@ namespace ISC_Win_WinForm_GUI
 
         private void Check_Overlay_CheckedChanged(object sender, EventArgs e)
         {
-            if (Check_Overlay.Checked)
-                MyChart.DisableAnimations = true;
-            else
-                MyChart.DisableAnimations = false;
-
-            Chart_Refresh();
-            SpectrumPlot(true);
+            if (!(RadioButton_RefNew.Checked && tabScanPage.SelectedIndex == 0))
+            {
+                if (tabScanPage.SelectedIndex == 2 && !Check_Overlay.Checked)
+                {
+                    foreach (DataGridViewRow row in dataGridView_savescan.Rows)
+                        row.Cells["Select"].Value = false;
+                    dataGridView_savescan.Rows[dataGridView_savescan.CurrentCell.RowIndex].Cells["Select"].Value = true;
+                }
+                Clear_Chart(true);
+                SpectrumPlot();
+            }
         }
         private void Chart_Refresh()
         {
-            MyChart.Series.Clear();
+            Clear_Chart();
             MyChart.AxisX.Clear();
             MyChart.AxisY.Clear();
+
+            String labelY = "";
+
+            if (RadioButton_Intensity.Checked)
+                labelY = "Intensity";
+            else if (RadioButton_Reference.Checked)
+                labelY = "Reference";
+            else if (RadioButton_Absorbance.Checked)
+                labelY = "Absorbance";
+            else if (RadioButton_Reflectance.Checked)
+                labelY = "Reflectance";
 
             MyChart.Series.Add(new GLineSeries
             {
                 Values = new GearedValues<ObservablePoint>(),
-                Title = "Intensity",
+                Title = labelY,
                 StrokeThickness = 1,
-                Fill = null,
+                Fill = System.Windows.Media.Brushes.Transparent,
                 LineSmoothness = 0,
                 PointGeometry = null,
                 PointGeometrySize = 0,
@@ -6601,7 +7545,8 @@ namespace ISC_Win_WinForm_GUI
                     IsEnabled = false
                 }
             });
-            MyChart.AxisY.Add(new Axis { Title = "Intensity" });
+
+            MyChart.AxisY.Add(new Axis { Title = labelY });
         }
 
         private void ListBox_TargetCfgs_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -6658,15 +7603,31 @@ namespace ISC_Win_WinForm_GUI
 
         private void ListBox_LocalCfgs_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (IsFetchingDeviceInfo || NewConfig || EditConfig) return;
+
+            int selInx = -1;
+            if (sender.GetType() == typeof(String))
+                selInx = int.Parse((string)sender);
+
             isSelectingConfig = true;
             if (NewConfig == true || EditConfig == true)
             {
                 EditConfig = false;
                 NewConfig = false;
                 Button_CfgCancel_Click(this, e);
+                return;
             }
-            LocalCfg_Last_SelIndex = LocalCfg_SelIndex;
-            LocalCfg_SelIndex = ListBox_LocalCfgs.SelectedIndex;
+
+            if (selInx == -1)
+            {
+                LocalCfg_Last_SelIndex = LocalCfg_SelIndex;
+                LocalCfg_SelIndex = ListBox_LocalCfgs.SelectedIndex;
+            }
+            else
+            {
+                LocalCfg_SelIndex = selInx;
+            }
+
             if (LocalCfg_SelIndex < 0 || LocalConfig.Count == 0)
             {
                 if (ListBox_TargetCfgs.SelectedIndex == -1 && ListBox_LocalCfgs.SelectedIndex == -1)//new config situation
@@ -7156,6 +8117,7 @@ namespace ISC_Win_WinForm_GUI
                     break;
                 case nameof(ScanConfigMode.EDIT):
                     Button_CfgNew.Enabled = false;
+                    Button_CfgEdit.Enabled = false;
                     Button_CfgDelete.Enabled = false;
                     Button_CfgSave.Enabled = true;
                     Button_CfgCancel.Enabled = true;
@@ -7218,6 +8180,16 @@ namespace ISC_Win_WinForm_GUI
             FileFormats.AppendChild(XmlDoc.CreateTextNode(ScanFile_Formats.ToString()));
             Root.AppendChild(FileFormats);
 
+            // Create csv delimiter node under root element
+            string delimiterString = ""; 
+            if (CSV_Delimiter == "\t")
+                delimiterString = "TAB";
+            else
+                delimiterString = CSV_Delimiter;
+            XmlElement CSVDelimiter = XmlDoc.CreateElement("CSVDelimiter");
+            CSVDelimiter.AppendChild(XmlDoc.CreateTextNode(delimiterString));
+            Root.AppendChild(CSVDelimiter);
+
             // Save XML file
             try
             {
@@ -7245,18 +8217,22 @@ namespace ISC_Win_WinForm_GUI
 
             if (int.TryParse(Text_ContScan.Text, out int repeat) && repeat > 1)
             {
+                Manual_ContScan_UI_Con(!checkBox_AutoScan.Checked);
                 CheckBox_SaveOneCSV.Enabled = true;
+                CheckBox_SaveOneCSV.Checked = true;
                 CheckBox_AverageCSV.Enabled = true;
-                checkBox_StopOnError.Enabled = true;
+                CheckBox_AverageCSV.Checked = true;
+                checkBox_AutoScan.Enabled = true;
             }
             else
             {
+                Manual_ContScan_UI_Con(false);
                 CheckBox_SaveOneCSV.Enabled = false;
                 CheckBox_SaveOneCSV.Checked = false;
                 CheckBox_AverageCSV.Enabled = false;
                 CheckBox_AverageCSV.Checked = false;
                 checkBox_StopOnError.Enabled = false;
-                checkBox_StopOnError.Enabled = false;
+                checkBox_AutoScan.Enabled = false;
             }
         }
 
@@ -7277,62 +8253,106 @@ namespace ISC_Win_WinForm_GUI
 
             if (checkBox.Name.ToString() == "CheckBox_SaveCombCSV")
             {
-                if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == false)
+                if (checkBox.Checked == false)
                 {
-                    DialogResult Result = Message.ShowQuestion("Are you sure to cancel saving both *.dat and *.csv?\n" +
-                                                                      "Your scan result will not be fully saved.", null, MessageBoxButtons.YesNo);
-                    if (Result == DialogResult.No)
-                        CheckBox_SaveCombCSV.Checked = true;
+                    if (SaveCSV_Click_Counts++ < 9)
+                        checkBox.Checked = true;
                 }
+                //if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == false)
+                //{
+                //    DialogResult Result = Message.ShowQuestion("Are you sure to cancel saving both *.dat and *.csv?\n" +
+                //                                                      "Your scan result will not be fully saved.", null, MessageBoxButtons.YesNo);
+                //    if (Result == DialogResult.No)
+                //        CheckBox_SaveCombCSV.Checked = true;
+                //}
             }
             else if (checkBox.Name.ToString() == "CheckBox_SaveDAT")
             {
-                if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == false)
+                if (checkBox.Checked == false)
                 {
-                    DialogResult Result = Message.ShowQuestion("Are you sure to cancel saving both *.dat and *.csv?\n" +
-                                                                      "Your scan result will not be fully saved.", null, MessageBoxButtons.YesNo);
-                    if (Result == DialogResult.No)
-                        CheckBox_SaveDAT.Checked = true;
+                    if (SaveDAT_Click_Counts++ < 9)
+                        checkBox.Checked = true;
                 }
-                else if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == true)
+                //if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == false)
+                //{
+                //    DialogResult Result = Message.ShowQuestion("Are you sure to cancel saving both *.dat and *.csv?\n" +
+                //                                                      "Your scan result will not be fully saved.", null, MessageBoxButtons.YesNo);
+                //    if (Result == DialogResult.No)
+                //        CheckBox_SaveDAT.Checked = true;
+                //}
+                //else if (CheckBox_SaveDAT.Checked == false && CheckBox_SaveCombCSV.Checked == true)
+                //{
+                //    CheckBox_SaveDAT.Checked = true;
+                //}
+            }
+            else if (checkBox.Name.ToString() == "CheckBox_SaveJDX")
+            {
+                CheckBox_SaveIJDX.CheckedChanged -= CheckBox_SaveFileFormat_Click;
+                CheckBox_SaveAJDX.CheckedChanged -= CheckBox_SaveFileFormat_Click;
+                CheckBox_SaveRJDX.CheckedChanged -= CheckBox_SaveFileFormat_Click;
+                if (checkBox.Checked == true)
                 {
-                    DialogResult Result = Message.ShowQuestion("Are you sure to cancel saving *.dat?\n" +
-                                                                      "It will not be able to display in saved scan.", null, MessageBoxButtons.YesNo);
-                    if (Result == DialogResult.No)
-                        CheckBox_SaveDAT.Checked = true;
+                    CheckBox_SaveIJDX.Checked = true;
+                    CheckBox_SaveAJDX.Checked = true;
+                    CheckBox_SaveRJDX.Checked = true;
                 }
+                else
+                {
+                    CheckBox_SaveIJDX.Checked = false;
+                    CheckBox_SaveAJDX.Checked = false;
+                    CheckBox_SaveRJDX.Checked = false;
+                }
+                CheckBox_SaveIJDX.CheckedChanged += CheckBox_SaveFileFormat_Click;
+                CheckBox_SaveAJDX.CheckedChanged += CheckBox_SaveFileFormat_Click;
+                CheckBox_SaveRJDX.CheckedChanged += CheckBox_SaveFileFormat_Click;
+            }
+            else if (checkBox.Name.ToString() == "CheckBox_SaveIJDX" || checkBox.Name.ToString() == "CheckBox_SaveAJDX" || checkBox.Name.ToString() == "CheckBox_SaveRJDX")
+            {
+                CheckBox_SaveJDX.CheckedChanged -= CheckBox_SaveFileFormat_Click;
+                if (CheckBox_SaveJDX.Checked == false && (CheckBox_SaveIJDX.Checked == true || CheckBox_SaveAJDX.Checked == true || CheckBox_SaveRJDX.Checked == true))
+                    CheckBox_SaveJDX.Checked = true;
+                else if (CheckBox_SaveJDX.Checked == true && CheckBox_SaveIJDX.Checked == false && CheckBox_SaveAJDX.Checked == false && CheckBox_SaveRJDX.Checked == false)
+                    CheckBox_SaveJDX.Checked = false;
+                CheckBox_SaveJDX.CheckedChanged += CheckBox_SaveFileFormat_Click;
             }
 
-            ScanFile_Formats = (CheckBox_SaveCombCSV.Checked == true) ? (ScanFile_Formats | 0x01) : (ScanFile_Formats & (~0x01));
+            //ScanFile_Formats = (CheckBox_SaveCombCSV.Checked == true) ? (ScanFile_Formats | 0x01) : (ScanFile_Formats & (~0x01));
             ScanFile_Formats = (CheckBox_SaveICSV.Checked == true) ? (ScanFile_Formats | 0x02) : (ScanFile_Formats & (~0x02));
             ScanFile_Formats = (CheckBox_SaveACSV.Checked == true) ? (ScanFile_Formats | 0x04) : (ScanFile_Formats & (~0x04));
             ScanFile_Formats = (CheckBox_SaveRCSV.Checked == true) ? (ScanFile_Formats | 0x08) : (ScanFile_Formats & (~0x08));
             ScanFile_Formats = (CheckBox_SaveIJDX.Checked == true) ? (ScanFile_Formats | 0x10) : (ScanFile_Formats & (~0x10));
             ScanFile_Formats = (CheckBox_SaveAJDX.Checked == true) ? (ScanFile_Formats | 0x20) : (ScanFile_Formats & (~0x20));
             ScanFile_Formats = (CheckBox_SaveRJDX.Checked == true) ? (ScanFile_Formats | 0x40) : (ScanFile_Formats & (~0x40));
-            ScanFile_Formats = (CheckBox_SaveDAT.Checked == true) ? (ScanFile_Formats | 0x80) : (ScanFile_Formats & (~0x80));
+            //ScanFile_Formats = (CheckBox_SaveDAT.Checked == true) ? (ScanFile_Formats | 0x80) : (ScanFile_Formats & (~0x80));
         }
 
         private Int32 SetDefaultConfig()
         {
-            String Model = (!String.IsNullOrEmpty(Device.DevInfo.ModelName)) ? Device.DevInfo.ModelName : String.Empty;
-            Model = (Model != String.Empty) ? Model.Substring(Model.LastIndexOf('-') + 1) : String.Empty;
-            ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetDefaultConfig(Model);
+            List<ScanConfig.SlewScanConfig> CurConfig = ScanConfig.GetDefaultConfig();
 
             ScanConfig.TargetConfig.Clear();
-            ScanConfig.TargetConfig.Add(CurConfig);
+            for (int i = 0; i < CurConfig.Count; i++)
+            {
+                ScanConfig.TargetConfig.Add(CurConfig[i]);
+            }
 
             int ret;
             if ((ret = ScanConfig.SetConfigList()) == 0)
             {
-                //Message.ShowInfo("Add default config to device success!");
-                ScanConfig.SetTargetActiveScanIndex(0);
-                RefreshTargetCfgList();
-                SetScanConfig(ScanConfig.TargetConfig[0], true, 0);
+                int retIdx = ScanConfig.SetDefaultActiveConfig();
+                if (retIdx >= 0)
+                { // If retrun a valid config index
+                    SetScanConfig(ScanConfig.TargetConfig[retIdx], true, retIdx); //Apply the config
+                    this.Invoke(new Action(() =>
+                    {
+                        RefreshTargetCfgList();
+                        ListBox_TargetCfgs_MouseClick(this, null);
+                        ListBox_TargetCfgs.SelectedIndex = retIdx;
+                    }));
+                }
             }
             else
             {
-                //Message.ShowError("Add default config to device failed!");
                 ScanConfig.TargetConfig.Clear();
             }
             return ret;
@@ -7374,7 +8394,7 @@ namespace ISC_Win_WinForm_GUI
 
         private void ProgressWindow(String title, String content, Boolean cancellable)
         {
-            PBW = new ProgressBar(title, content, cancellable) { };
+            PBW = new ProgressBar(title, content, cancellable, formResize.form_ratio_width, formResize.form_ratio_height) { };
             PBW.StartPosition = FormStartPosition.CenterScreen;
             PBW.TopMost = true;
             Application.Run(PBW);
@@ -7412,17 +8432,41 @@ namespace ISC_Win_WinForm_GUI
         {
             if (checkBox_tooltip.Checked)
             {
-                var tooltip = new DefaultTooltip
+                rb_tooltip4single.Enabled = false;
+                rb_tooltip4multi.Enabled = false;
+
+                TooltipSelectionMode ttsm = new TooltipSelectionMode();
+                if (rb_tooltip4single.Checked)
+                    ttsm = TooltipSelectionMode.SharedXInSeries;
+                else
+                    ttsm = TooltipSelectionMode.SharedXValues;
+
+                if (Tooltips_Show_Details)
                 {
-                    SelectionMode = TooltipSelectionMode.SharedXInSeries
-                };
-                MyChart.DataTooltip = tooltip;
+                    MyChart.DataTooltip = new CustomersTooltip()
+                    {
+                        SelectionMode = ttsm,
+                    };
+                }
+                else
+                {
+                    MyChart.DataTooltip = new DefaultTooltip()
+                    {
+
+                        SelectionMode = ttsm,
+                    };
+                }
+
                 MyChart.Hoverable = true;
+                rb_tooltip4single.Enabled = false;
+                rb_tooltip4multi.Enabled = false;
             }
             else
             {
                 MyChart.DataTooltip = null;
                 MyChart.Hoverable = false;
+                rb_tooltip4single.Enabled = true;
+                rb_tooltip4multi.Enabled = true;
             }
         }
 
@@ -7430,43 +8474,15 @@ namespace ISC_Win_WinForm_GUI
         {
             if (checkBox_zoom.Checked)
             {
-                MyChart.Zoom = ZoomingOptions.Xy;
+                MyChart.Zoom = userZoomOption;
             }
             else
             {
                 MyChart.Zoom = ZoomingOptions.None;
-                MyChart.AxisX.Clear();
-                MyChart.AxisY.Clear();
-                if (Scan.ScanConfigData.section != null)
-                {
-                    int min = Device.DevInfo.MaxWavelength, max = Device.DevInfo.MinWavelength;
-                    GetMaxMinWav(ref min, ref max);
-                    MyChart.AxisX.Add(new Axis
-                    {
-                        Title = "Wavelength (nm)",
-                        MinValue = min,
-                        MaxValue = max,
-                        Separator = new Separator
-                        {
-                            Step = 50,
-                            IsEnabled = false
-                        }
-                    });
-                }
-                else
-                {
-                    MyChart.AxisX.Add(new Axis
-                    {
-                        Title = "Wavelength (nm)",
-                        MinValue = Device.DevInfo.MinWavelength,
-                        MaxValue = Device.DevInfo.MaxWavelength,
-                        Separator = new Separator
-                        {
-                            Step = 50,
-                            IsEnabled = false
-                        }
-                    });
-                }
+                MyChart.AxisX[0].MinValue = double.NaN;
+                MyChart.AxisX[0].MaxValue = double.NaN;
+                MyChart.AxisY[0].MinValue = double.NaN;
+                MyChart.AxisY[0].MaxValue = double.NaN;
             }
         }
 
@@ -7489,6 +8505,14 @@ namespace ISC_Win_WinForm_GUI
                 SelCfg_IsTarget = false;
             }
         }
+
+        private void ListBox_TargetCfgs_MouseClick(object sender, MouseEventArgs e)
+        {
+            ListBox_LocalCfgs.BackColor = System.Drawing.Color.White;
+            ListBox_TargetCfgs.BackColor = System.Drawing.Color.AliceBlue;
+            SelCfg_IsTarget = true;
+        }
+
         private void ClearDetailValue()
         {
             TextBox_CfgName.Text = "";
@@ -7498,9 +8522,7 @@ namespace ISC_Win_WinForm_GUI
                 TextBox_CfgRangeStart[i].Text = "";
                 TextBox_CfgRangeEnd[i].Text = "";
                 TextBox_CfgDigRes[i].Text = "";
-                Label_maxPattern[i].Text = "";
-                Label_Pattern[i].Text = "";
-                label_totalPatterns.Text = "";
+                Label_overSampleRate[i].Text = "";
             }
         }
 
@@ -7517,74 +8539,6 @@ namespace ISC_Win_WinForm_GUI
         private void button_restore_fac_ref_warning_Click(object sender, EventArgs e)
         {
             Message.ShowWarning(RestoreFacRef_Msg);
-        }
-
-        string lastProcessed;
-        private async void textBox_ScanAvg_TextChanged(object sender, EventArgs e)
-        {
-            // Wait until GUI initialized
-            if (isInitialization || isApplyingConfig)
-                return;
-
-            // Clear last processed text if user deleted all text
-            if (string.IsNullOrEmpty(textBox_ScanAvg.Text)) lastProcessed = null;
-
-            // This inner method checks if user is still typing
-            async Task<bool> UserKeepsTyping()
-            {
-                string txt = textBox_ScanAvg.Text;  // Remember text
-                await Task.Delay(1000);  // Wait 1 second in case user keeps typing
-                return txt != textBox_ScanAvg.Text;  // Return that text changed or not
-            }
-            if (await UserKeepsTyping() || textBox_ScanAvg.Text == lastProcessed) return;
-
-            // Save the text
-            lastProcessed = textBox_ScanAvg.Text;
-
-            try
-            {
-                ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetCurrentConfig();
-                if (ushort.TryParse(textBox_ScanAvg.Text, out ushort value) && value > 0)
-                {
-                    CurConfig.head.num_repeats = value;
-                }
-                else
-                {
-                    Message.ShowError("Scan average number input error!");
-                    textBox_ScanAvg.Text = CurConfig.head.num_repeats.ToString();
-                    return;
-                }
-
-                ProgressWindowStart("Update Current Scan Configuration", "Update configuration in progress... Please Wait!", false);
-
-                if (DevCurCfg_IsTarget)
-                {
-                    ScanConfig.TargetConfig.RemoveAt(DevCurCfg_Index);
-                    ScanConfig.TargetConfig.Insert(DevCurCfg_Index, CurConfig);
-                    RefreshTargetCfgList();
-                    SaveCfgToLocalOrDevice(true);
-
-                    SetScanConfig(ScanConfig.TargetConfig[DevCurCfg_Index], true, DevCurCfg_Index);
-                }
-                else
-                {
-                    LocalConfig.RemoveAt(DevCurCfg_Index);
-                    LocalConfig.Insert(DevCurCfg_Index, CurConfig);
-                    RefreshLocalCfgList();
-                    SaveCfgToLocalOrDevice(false);
-
-                    SetScanConfig(LocalConfig[DevCurCfg_Index], false, DevCurCfg_Index);
-                }
-
-                if (RadioButton_RefPre.Checked)
-                    RadioButton_RefPre_CheckedChanged(null, null);
-
-                ProgressWindowCompleted();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Exception caught: {0}", ex);
-            }
         }
 
         private void CheckBox_FileNamePrefix_CheckedChanged(object sender, EventArgs e)
@@ -7744,16 +8698,20 @@ namespace ISC_Win_WinForm_GUI
                 charNumLimit = 15;
             else if (textBox.Name == "TextBox_BLE_Display_Name")
                 charNumLimit = 26;
-            else if (textBox.Name.Contains("TextBox_FileNamePrefix"))
-                charNumLimit = 50;
+            else if (textBox.Name.Contains("TextBox_FileNamePrefix1"))
+                charNumLimit = 200 - TextBox_FileNamePrefix2.Text.Length - TextBox_FileNamePrefix3.Text.Length;
+            else if (textBox.Name.Contains("TextBox_FileNamePrefix2"))
+                charNumLimit = 200 - TextBox_FileNamePrefix1.Text.Length - TextBox_FileNamePrefix3.Text.Length;
+            else if (textBox.Name.Contains("TextBox_FileNamePrefix3"))
+                charNumLimit = 200 - TextBox_FileNamePrefix1.Text.Length - TextBox_FileNamePrefix2.Text.Length;
             else if (textBox.Name.Contains("TextBox_CfgName"))
                 charNumLimit = 40;
 
             int cursorLoc = textBox.SelectionStart, count = 0;
             if (textBox.Name == "TextBox_BLE_Display_Name")
-                textBox.Text = Regex.Replace(textBox.Text, @"[^0-9a-zA-Z\-\<\>_ ]+", m => { count++; return ""; });
+                textBox.Text = Regex.Replace(textBox.Text, @"[^0-9a-zA-Z\-\<\>_.#@ ]+", m => { count++; return ""; });
             else
-                textBox.Text = Regex.Replace(textBox.Text, @"[^0-9a-zA-Z\-_ ]+", m => { count++; return ""; });
+                textBox.Text = Regex.Replace(textBox.Text, @"[^0-9a-zA-Z\-_.#@ ]+", m => { count++; return ""; });
             textBox.SelectionStart = count >= 1 ? cursorLoc - 1 : cursorLoc;
 
             if (charNumLimit > 0 && textBox.Text.Length >= charNumLimit)
@@ -7775,6 +8733,13 @@ namespace ISC_Win_WinForm_GUI
                 ListBox_TargetCfgs.Items.CopyTo(targetCfgItems, 0);
                 ListBox_LocalCfgs.Items.CopyTo(localCfgItems, 0);
 
+                m.Items.Add("[Add new LOCAL config]");
+                m.Items[0].Font = new Font(m.Items[0].Font.FontFamily, m.Items[0].Font.Size, FontStyle.Italic);
+                m.Items.Add("[Add new DEVICE config]");
+                m.Items[1].Font = new Font(m.Items[1].Font.FontFamily, m.Items[1].Font.Size, FontStyle.Italic);
+
+                m.Items.Add(new ToolStripSeparator());
+
                 foreach (var item in targetCfgItems)
                     m.Items.Add("Device: " + item.ToString());
 
@@ -7783,7 +8748,35 @@ namespace ISC_Win_WinForm_GUI
                 foreach (var item in localCfgItems)
                     m.Items.Add("Local: " + item.ToString());
 
+                try
+                {
+                    for (int i = 0; i < m.Items.Count; i++)
+                    {
+                        ToolStripMenuItem menuItem = m.Items[i] as ToolStripMenuItem;
+                        string curCfgName = Label_CurrentConfig.Text;
+
+                        if (menuItem == null)
+                            continue;
+
+                        int foundS1 = curCfgName.IndexOf("Current");
+                        int foundS2 = curCfgName.IndexOf(":");
+                        curCfgName = curCfgName.Remove(foundS1, foundS2 - foundS1 + 2);
+                        curCfgName = curCfgName.Replace(" ->", ":");
+
+                        if (menuItem.Text == curCfgName)
+                        {
+                            ((ToolStripMenuItem)m.Items[i]).Checked = true;
+                            break;
+                        }
+                    }
+                }
+                catch { }
+
+                m.MouseWheel += rootItem_MouseWheel;
+                m.Opened += rootItem_DropDownOpened;
+                m.Closed += rootItem_DropDownClosed;
                 m.ItemClicked += new ToolStripItemClickedEventHandler(Label_CurrentConfig_ContexMenu_ItemClicked);
+                m.MaximumSize = new Size(this.Width / 2, this.Height / 4);
                 m.Show(Label_CurrentConfig, new Point(e.X, e.Y));
             }
         }
@@ -7792,8 +8785,21 @@ namespace ISC_Win_WinForm_GUI
         {
             ToolStripItem item = e.ClickedItem;
             string fullCfgName = item.Text;
+            
             if (fullCfgName == "")
                 return;
+            
+            if (fullCfgName.Contains("[Add new "))
+            {
+                tabScanPage.SelectedIndex = 1;
+                if (fullCfgName.Contains("LOCAL"))
+                    ListBox_LocalCfgs_MouseClick(this, null);
+                else
+                    ListBox_TargetCfgs_MouseClick(this, null);
+                Button_CfgNew_Click(this, null);
+                return;
+            }
+
             string[] cfgName = fullCfgName.Split(':');
             cfgName[1] = cfgName[1].Substring(1);
             int selIdx = 0;
@@ -7829,13 +8835,6 @@ namespace ISC_Win_WinForm_GUI
                 RadioButton_RefPre_CheckedChanged(null, null);
         }
 
-        private void ListBox_TargetCfgs_MouseClick(object sender, MouseEventArgs e)
-        {
-            ListBox_LocalCfgs.BackColor = System.Drawing.Color.White;
-            ListBox_TargetCfgs.BackColor = System.Drawing.Color.AliceBlue;
-            SelCfg_IsTarget = true;
-        }
-
         static bool prevSysBusyState = false;
         private void SystemBusy(bool enable)
         {
@@ -7848,10 +8847,13 @@ namespace ISC_Win_WinForm_GUI
                     if (enable)
                         SpecificCtrlIgnoreList.Clear();
                     //ControlSpecificControls(this, "Button", !enable);
+
                     if (enable)
-                        ControlAllControls(this, !enable);
-                    else if (isInitialization)
-                        ControlAllControls(this, false);
+                        //ControlAllControls(this, !enable);
+                        this.Enabled = !enable;
+                    else if (IsFetchingDeviceInfo)
+                        //ControlAllControls(this, false);
+                        this.Enabled = false;
                     else if (!Device.IsConnected())
                         UI_no_connection();
                     else
@@ -7891,35 +8893,16 @@ namespace ISC_Win_WinForm_GUI
             }
         }
 
-        private void MainWindow_SizeChanged(object sender, EventArgs e)
-        {
-            if (this.Width < 920)
-                return;
-            else if (this.Width < 1200 && tabControl_MainFunctions.SelectedIndex == 0)
-            {
-                splitContainer1.Panel2Collapsed = true;
-                splitContainer1.SplitterDistance = this.Width - 25;
-                Console.WriteLine("Small 1200");
-            }
-            else if (this.Width >= 1280 && tabControl_MainFunctions.SelectedIndex == 0)
-            {
-                splitContainer1.Panel2Collapsed = false;
-                Console.WriteLine("Show container2");
-            }
-            Console.WriteLine("[{0} ~ {1}] : {2}", splitContainer1.Panel1MinSize, this.Width - splitContainer1.Panel2MinSize, splitContainer1.SplitterDistance);
-
-        }
-
         private void Button_EnableLog_Click(object sender, EventArgs e)
         {
             LogManager.GetRepository().Threshold = log4net.Core.Level.All;
-            Label_LogStatus.Text = "Log File Status: Enable!";
+            Label_LogStatus.Text = "Log File Status: Enabled";
         }
 
         private void Button_DisableLog_Click(object sender, EventArgs e)
         {
             LogManager.GetRepository().Threshold = log4net.Core.Level.Off;
-            Label_LogStatus.Text = "Log File Status: Disable!";
+            Label_LogStatus.Text = "Log File Status: Disabled";
         }
 
         private void Button_GetFanDelayOffTime_Click(object sender, EventArgs e)
@@ -7943,7 +8926,9 @@ namespace ISC_Win_WinForm_GUI
 
         private void groupBox_Device_MouseDoubleClick(object sender, EventArgs e)
         {
-            if (Device.DevInfo.TivaRev[0] >= 3 && Device.DevInfo.TivaRev[1] >= 6 && Device.DevInfo.TivaRev[1] >= 3)
+            const int verControl = 3 * 0x10000 + 6 * 0x100 + 3; // Supported from v3.6.3
+            int currVersion = Device.DevInfo.TivaRev[0] * 0x10000 + Device.DevInfo.TivaRev[1] * 0x100 + Device.DevInfo.TivaRev[1];
+            if (Con_Dev_With_FAN.FirstOrDefault(stringToCheck => stringToCheck.Contains(Device.Get_Model_Identifier())) == Device.Get_Model_Identifier() && currVersion >= verControl)
             {
                 label_FanOffTimeSetting.Visible = !label_FanOffTimeSetting.Visible;
                 textBox_FanOffTime.Visible = !textBox_FanOffTime.Visible;
@@ -8010,6 +8995,481 @@ namespace ISC_Win_WinForm_GUI
             Double ScanTime = Scan.GetEstimatedScanTime();
             if (ScanTime > 0)
                 Label_EstimatedScanTime.Text = "Est. Device Scan Time: " + String.Format("{0:0.000}", ScanTime) + " secs.";
+        }
+
+        private void Clear_Chart(bool RemoveChartData = false)
+        {
+            if (RemoveChartData)
+            {
+                ChartData_RefIntensity.Clear();
+                ChartData_Intensity.Clear();
+                ChartData_Absorbance.Clear();
+                ChartData_Reflectance.Clear();
+            }
+
+            MyChart.Series.Clear();
+
+            // For initial the chart to avoid the crazy axis numbers
+            string title = "";
+            if (RadioButton_Absorbance.Checked)
+                title = "Absorbance";
+            else if (RadioButton_Intensity.Checked)
+                title = "Intensity";
+            else if (RadioButton_Reflectance.Checked)
+                title = "Reflectance";
+            else if (RadioButton_Reference.Checked)
+                title = "Reference";
+            MyChart.Series.Add(new GLineSeries
+            {
+                Values = new GearedValues<ObservablePoint>(),
+                Title = title,
+                PointGeometry = null,
+                Fill = System.Windows.Media.Brushes.Transparent,
+                StrokeThickness = 1
+            });
+        }
+
+        private void label_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            var lb = (Label)sender;
+            Clipboard.SetText(lb.Text);
+            MessageBox.Show("Text has been copied to clipboard.");
+        }
+
+        private void CheckBox_SaveCombCSV_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e != null && e.Button == MouseButtons.Right)
+            {
+                ContextMenuStrip m = new ContextMenuStrip();
+
+                m.Items.Add("CSV Delimiter Options");
+                m.Items.Add(new ToolStripSeparator());
+                m.Items.Add("0: comma (,)");
+                m.Items.Add("1: semicolon (;)");
+                m.Items.Add("2: tab (\\t)");
+                m.Items.Add("3: pipe (|)");
+
+                try
+                {
+                    for (int i = 2; i < m.Items.Count; i++)
+                    {
+                        ToolStripMenuItem menuItem = m.Items[i] as ToolStripMenuItem;
+                        string compString = CSV_Delimiter == "\t" ? "\\t" : CSV_Delimiter;
+
+                        string delimeter = menuItem.Text;
+                        int foundS1 = delimeter.IndexOf("(");
+                        int foundS2 = delimeter.IndexOf(")");
+                        delimeter = delimeter.Substring(foundS1 + 1, foundS2 - foundS1 - 1);
+
+                        if (delimeter == compString)
+                        {
+                            ((ToolStripMenuItem)m.Items[i]).Checked = true;
+                            break;
+                        }
+                    }
+                }
+                catch { }
+
+                m.ItemClicked += new ToolStripItemClickedEventHandler(CheckBox_SaveCombCSV_ContexMenu_ItemClicked);
+                m.Show(CheckBox_SaveCombCSV, new Point(e.X, e.Y));
+            }
+        }
+
+        private void Button_ApplyNumAvgToConfig_Click(object sender, EventArgs e)
+        {
+            Button_SaveNumAvgToConfig.Enabled = true;
+        }
+
+        private void Button_SaveNumAvgToConfig_Click(object sender, EventArgs e)
+        {
+            ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetCurrentConfig();
+            if (ushort.TryParse(textBox_ScanAvg.Text, out ushort scanAvg))
+            {
+                CurConfig.head.num_repeats = scanAvg;
+            }
+            else
+            {
+                Message.ShowError("Scan average number input error!");
+                return;
+            }
+
+            if (DevCurCfg_IsTarget)
+            {
+                ScanConfig.TargetConfig.RemoveAt(DevCurCfg_Index);
+                ScanConfig.TargetConfig.Insert(DevCurCfg_Index, CurConfig);
+                RefreshTargetCfgList();
+                SaveCfgToLocalOrDevice(DevCurCfg_IsTarget);
+                SetScanConfig(ScanConfig.TargetConfig[DevCurCfg_Index], true, DevCurCfg_Index);
+                object sndr = new object();
+                sndr = DevCurCfg_Index.ToString();
+                ListBox_TargetCfgs_SelectedIndexChanged(sndr, EventArgs.Empty);
+            }
+            else
+            {
+                LocalConfig.RemoveAt(DevCurCfg_Index);
+                LocalConfig.Insert(DevCurCfg_Index, CurConfig);
+                RefreshLocalCfgList();
+                SaveCfgToLocalOrDevice(DevCurCfg_IsTarget);
+                SetScanConfig(LocalConfig[DevCurCfg_Index], false, DevCurCfg_Index);
+                object sndr = new object();
+                sndr = DevCurCfg_Index.ToString();
+                ListBox_LocalCfgs_SelectedIndexChanged(sndr, EventArgs.Empty);
+            }
+
+            GroupBox_ScanAvg.Text = "Scan Average";
+            GroupBox_ScanAvg.ForeColor = Color.Black;
+            textBox_ScanAvg.ForeColor = Color.Black;
+            Button_SaveNumAvgToConfig.Enabled = false;
+        }
+
+        private void textBox_ScanAvg_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!Char.IsControl(e.KeyChar))
+                e.Handled = !char.IsDigit(e.KeyChar);
+        }
+
+        private void textBox_ScanAvg_Validated(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(textBox_ScanAvg.Text))
+            {
+                Message.ShowError("Input could not be empty!", "Invalid value");
+                textBox_ScanAvg.Focus();
+            }
+        }
+
+        private void textBox_ScanAvg_TextChanged(object sender, EventArgs e)
+        {
+            var textBox = (TextBox)sender;
+
+            if (string.IsNullOrEmpty(textBox.Text))
+            {
+                Button_Scan.Enabled = false;
+                Button_SaveNumAvgToConfig.Enabled = false;
+                return;
+            }
+            else
+            {
+                Button_Scan.Enabled = true;
+                Button_SaveNumAvgToConfig.Enabled = true;
+            }
+
+            if (textBox.Text.Length > 0 && textBox.Text.Substring(0, 1) == "0")
+            {
+                int len = textBox.Text.Length;
+                textBox.Text = textBox.Text.Substring(1, textBox.Text.Length - 1);
+                if (len == 1)
+                    return;
+            }
+
+            ScanConfig.SlewScanConfig CurConfig = ScanConfig.GetCurrentConfig();
+
+            ushort.TryParse(textBox_ScanAvg.Text, out ushort scanAvg);
+
+            if (scanAvg > 999)
+                textBox_ScanAvg.Text = "999";
+
+            ushort.TryParse(textBox_ScanAvg.Text, out scanAvg);
+
+            if (CurConfig.head.num_repeats != scanAvg)
+            {
+                GroupBox_ScanAvg.Text = "Scan Average:  Temporarily set, not yet saved to current config.";
+                GroupBox_ScanAvg.ForeColor = Color.DarkBlue;
+                textBox.ForeColor = Color.DarkBlue;
+                Button_SaveNumAvgToConfig.Enabled = true;
+            }
+            else
+            {
+                GroupBox_ScanAvg.Text = "Scan Average";
+                GroupBox_ScanAvg.ForeColor = Color.Black;
+                textBox.ForeColor = Color.Black;
+                Button_SaveNumAvgToConfig.Enabled = false;
+            }
+
+            if (Scan.SetScanNumRepeats(ushort.Parse(textBox_ScanAvg.Text)) < SDK.RETURN_PASS)
+                Message.ShowError("Set Scan Number Repeats Failed!");
+
+            Double ScanTime = Scan.GetEstimatedScanTime();
+            if (ScanTime > 0)
+                Label_EstimatedScanTime.Text = "Est. Device Scan Time: " + String.Format("{0:0.000}", ScanTime) + " secs.";
+
+            if (!IsFetchingDeviceInfo)
+                RadioButton_RefPre_CheckedChanged(null, null);
+        }
+
+        void CheckBox_SaveCombCSV_ContexMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripItem item = e.ClickedItem;
+            string selectDelimiterString = item.Text;
+            if (selectDelimiterString == "")
+                return;
+            int foundS1 = selectDelimiterString.IndexOf("(");
+            int foundS2 = selectDelimiterString.IndexOf(")");
+            if (foundS1 > 0 && foundS2 > 0 && foundS2 > foundS1)
+            {
+                selectDelimiterString = selectDelimiterString.Substring(foundS1 + 1, foundS2 - foundS1 - 1);
+                if (selectDelimiterString == "\\t")
+                    CSV_Delimiter = "\t";
+                else
+                    CSV_Delimiter = selectDelimiterString;
+            }
+        }
+
+        private void btn_FileListRefresh_Click(object sender, EventArgs e)
+        {
+            LoadSavedScanList();
+            SavedScan_RefreshDataGridView();
+            ClearSavedScanCfgItems();
+            SaveSettings();
+
+            if (dataGridView_savescan.RowCount > 0)
+            {
+                foreach (DataGridViewRow row in dataGridView_savescan.Rows)
+                    row.Cells["Select"].Value = false;
+            }
+        }
+
+        private void checkBox_zoom_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e != null && e.Button == MouseButtons.Right)
+            {
+                ContextMenuStrip m = new ContextMenuStrip();
+
+                m.Items.Add("[Zoom option]");
+                m.Items.Add(new ToolStripSeparator());
+                m.Items.Add("X-Axis");
+                m.Items.Add("Y-Axis");
+                m.Items.Add("XY-Axes");
+
+                if (MyChart.Zoom == ZoomingOptions.X)
+                    ((ToolStripMenuItem)m.Items[2]).Checked = true;
+                else if (MyChart.Zoom == ZoomingOptions.Y)
+                    ((ToolStripMenuItem)m.Items[3]).Checked = true;
+                else if (MyChart.Zoom == ZoomingOptions.Xy)
+                    ((ToolStripMenuItem)m.Items[4]).Checked = true;
+                else
+                    return;
+
+                m.ItemClicked += new ToolStripItemClickedEventHandler(checkBox_zoom_ContexMenu_ItemClicked);
+                m.Show(checkBox_zoom, new Point(e.X, e.Y));
+            }
+        }
+
+        void checkBox_zoom_ContexMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripItem item = e.ClickedItem;
+            String zoomOption = item.Text;
+
+            if (zoomOption == String.Empty || zoomOption.Contains("option"))
+                return;
+
+            MyChart.AxisX[0].MinValue = double.NaN;
+            MyChart.AxisX[0].MaxValue = double.NaN;
+            MyChart.AxisY[0].MinValue = double.NaN;
+            MyChart.AxisY[0].MaxValue = double.NaN;
+
+            if (zoomOption.Contains("X-Axis"))
+                MyChart.Zoom = ZoomingOptions.X;
+            else if (zoomOption.Contains("Y-Axis"))
+                MyChart.Zoom = ZoomingOptions.Y;
+            else if (zoomOption.Contains("XY-Axes"))
+                MyChart.Zoom = ZoomingOptions.Xy;
+
+            userZoomOption = MyChart.Zoom;
+        }
+
+        private void panel_Tooltips_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e != null && e.Button == MouseButtons.Right)
+            {
+                ContextMenuStrip m = new ContextMenuStrip();
+
+                m.Items.Add("[Tooltips option]");
+                m.Items.Add(new ToolStripSeparator());
+                m.Items.Add("Normal");
+                m.Items.Add("Details");
+
+                if (Tooltips_Show_Details)
+                    ((ToolStripMenuItem)m.Items[3]).Checked = true;
+                else 
+                    ((ToolStripMenuItem)m.Items[2]).Checked = true;
+
+                m.ItemClicked += new ToolStripItemClickedEventHandler(panel_Tooltips_ContexMenu_ItemClicked);
+                m.Show(checkBox_zoom, new Point(e.X, e.Y));
+            }
+        }
+
+        void panel_Tooltips_ContexMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripItem item = e.ClickedItem;
+            String tooltipsOption = item.Text;
+
+            if (tooltipsOption == String.Empty || tooltipsOption.Contains("option"))
+                return;
+
+            if (tooltipsOption.Contains("Normal"))
+            {
+                Tooltips_Show_Details = false;
+            }
+            else if (tooltipsOption.Contains("Details"))
+            {
+                Tooltips_Show_Details = true;
+            }
+            checkBox_tooltip_CheckedChanged(null, null);
+        }
+
+        private void button_button_disableUACAlert_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = Message.ShowQuestion("Never ask UAC (User Access Control) for the GUI?");
+            if (dialogResult == DialogResult.Yes)
+            {
+                try
+                {
+                    String myPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    String myName = System.AppDomain.CurrentDomain.FriendlyName;
+                    myPath += "\\" + myName;
+                    RegistryKey myKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\\", true);
+                    if (myKey != null)
+                    {
+                        if (myKey.OpenSubKey(myPath, true) == null)
+                        {
+                            myKey.SetValue(myPath, "~ RUNASINVOKER", RegistryValueKind.String);
+                        }
+                    }
+                    else
+                    {
+                        myKey = Registry.CurrentUser.CreateSubKey("Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\\", true);
+                        myKey.CreateSubKey(myPath, true);
+                        myKey.SetValue(myPath, "~ RUNASINVOKER", RegistryValueKind.String);
+                    }
+                    myKey.Close();
+                }
+                catch (Exception eX)
+                {
+                    Message.ShowError(eX.Message, "Write Registry Failed");
+                    DBG.WriteLine(eX.Message);
+                    logFile.Error(eX.Message);
+                    return;
+                };
+            }
+        }
+
+        private void Button_ModelNameGet_MouseLeave(object sender, EventArgs e)
+        {
+            ModelNameGet_Click_Counts = 0;
+        }
+
+        private void Button_SerialNumberGet_MouseLeave(object sender, EventArgs e)
+        {
+            SerialNumberGet_Click_Counts = 0;
+        }
+
+        private void CheckBox_SaveDAT_MouseLeave(object sender, EventArgs e)
+        {
+            SaveDAT_Click_Counts = 0;
+        }
+
+        private void CheckBox_SaveCombCSV_MouseLeave(object sender, EventArgs e)
+        {
+            SaveCSV_Click_Counts = 0;
+        }
+
+        private void checkBox_AutoScan_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox_AutoScan.Checked)
+            {
+                checkBox_StopOnError.Checked = checkBox_AutoScan.Checked;
+                checkBox_StopOnError.Enabled = true;
+            }
+            else
+            {
+                checkBox_StopOnError.Checked = false;
+                checkBox_StopOnError.Enabled = false;
+                label_ContinuousMode.Text = "Manual Continuous Scan Mode";
+                label_ContinuousMode.Font = new Font(label_ContinueScan.Font.FontFamily, label_ContinueScan.Font.Size * 2, ((System.Drawing.FontStyle)(System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic)));
+            }
+            label_ContinuousMode.Visible = !checkBox_AutoScan.Checked;
+        }
+
+        private void button_ClearPlots_Click(object sender, EventArgs e)
+        {
+            Clear_Chart(true);
+        }
+
+        private void Manual_ContScan_UI_Con(bool on)
+        {
+            if (!(AppLoaded && Device.IsConnected())) return;
+            
+            label_ContinuousMode.Visible = on;
+            checkBox_StopOnError.Enabled = !on & checkBox_AutoScan.Checked;
+            GroupBox_RefSelect.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            GroupBox_LampControl.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            GroupBox_GainControl.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            GroupBox_ScanAvg.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            button_ClearPlots.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            if (RadioButton_RefNew.Checked)
+            {
+                GroupBox_ContScan.Enabled = false;
+                GroupBox_SaveScan.Enabled = false;
+            }
+            else
+            {
+                GroupBox_ContScan.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+                GroupBox_SaveScan.Enabled = !((Button_Scan.Text == "Scan Next") & on);
+            }
+        }
+
+        private void tabPage_Selecting(object sender, TabControlCancelEventArgs e)
+        {
+            if (NewConfig == true || EditConfig == true)
+                TextBox_CfgName.Focus();
+
+        }
+        private void tabPage_Deselecting(object sender, TabControlCancelEventArgs e)
+        {
+            if ((NewConfig == true || EditConfig == true) && !isSavingConfig)
+            {
+                e.Cancel = true;
+
+                for (int i = 0; i < 7; i++)
+                {
+                    if (i % 2 == 0)
+                    {
+                        GroupBox_CfgDetails.BackColor = Color.LightYellow;
+                        Button_CfgSave.BackColor = Color.LightYellow;
+                        if (!IsFetchingDeviceInfoWithError)
+                            Button_CfgCancel.BackColor = Color.LightYellow;
+                    }
+                    else
+                    {
+                        GroupBox_CfgDetails.BackColor = TransparencyKey;
+                        Button_CfgSave.BackColor = TransparencyKey;
+                        if (!IsFetchingDeviceInfoWithError)
+                            Button_CfgCancel.BackColor = TransparencyKey;
+                    }
+                    Application.DoEvents();
+                    SpinWait.SpinUntil(() => false, 250);
+                    Application.DoEvents();
+                }
+            }
+            else
+            {
+                GroupBox_CfgDetails.BackColor = TransparencyKey;
+                Button_CfgSave.BackColor = TransparencyKey;
+                if (!IsFetchingDeviceInfoWithError)
+                    Button_CfgCancel.BackColor = TransparencyKey;
+            }
+        }
+
+        private void button_SwitchDevice_Click(object sender, EventArgs e)
+        {
+            Device.Enumerate();
+            if (Device.DeviceFound.Length < 2)
+            {
+                Message.ShowWarning("There is no other device to switch!");
+                return;
+            }
+            this.Close();
+            Application.Restart();
         }
     }
 }

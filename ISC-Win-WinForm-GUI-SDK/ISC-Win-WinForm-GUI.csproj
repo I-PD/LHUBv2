@@ -8,10 +8,11 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>ISC_Win_WinForm_GUI</RootNamespace>
     <AssemblyName>ISC-NIRScan-GUI</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsWebBootstrapper>false</IsWebBootstrapper>
+    <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -22,8 +23,8 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>3.5.8.0</ApplicationVersion>
+    <ApplicationRevision>527</ApplicationRevision>
+    <ApplicationVersion>3.7.11.0527</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -51,6 +52,30 @@
     <LangVersion>7</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\Debug\x86\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;WIN32</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.2</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\Release\x86\</OutputPath>
+    <DefineConstants>TRACE;WIN32</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>ISC_Logo.ico</ApplicationIcon>
   </PropertyGroup>
@@ -60,32 +85,38 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>false</SignManifests>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <Reference Include="isccs_d">
+      <HintPath>ISC-NIRScan-Library\x86\isccs_d.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Reference Include="isccs_d">
+      <HintPath>ISC-NIRScan-Library\x64\isccs_d.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <Reference Include="isccs">
+      <HintPath>ISC-NIRScan-Library\x86\isccs.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Reference Include="isccs">
+      <HintPath>ISC-NIRScan-Library\x64\isccs.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <ItemGroup>
-    <Reference Include="isccs, Version=3.7.1.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>ISC-NIRScan-Library\isccs.dll</HintPath>
-    </Reference>
-    <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
-    </Reference>
-    <Reference Include="LiveCharts.Geared, Version=1.2.8.2, Culture=neutral, PublicKeyToken=7292f245d14ab8bf, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiveCharts.Geared.1.2.9\lib\net45\LiveCharts.Geared.dll</HintPath>
-    </Reference>
-    <Reference Include="LiveCharts.WinForms">
-      <HintPath>..\packages\LiveCharts.WinForms.0.9.7.1\lib\net45\LiveCharts.WinForms.dll</HintPath>
-    </Reference>
-    <Reference Include="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiveCharts.Wpf.0.9.7\lib\net45\LiveCharts.Wpf.dll</HintPath>
-    </Reference>
-    <Reference Include="log4net, Version=2.0.14.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\log4net.2.0.14\lib\net40\log4net.dll</HintPath>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xaml" />
@@ -109,6 +140,14 @@
     <Compile Include="BleMsgForm.Designer.cs">
       <DependentUpon>BleMsgForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="CustomerVm.cs" />
+    <Compile Include="DeviceSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DeviceSelection.Designer.cs">
+      <DependentUpon>DeviceSelection.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Helper.cs" />
     <Compile Include="LicenseWindow.xaml.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -129,6 +168,12 @@
       <DependentUpon>ProgressBar.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CustomersTooltip.xaml.cs">
+      <DependentUpon>CustomersTooltip.xaml</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="DeviceSelection.resx">
+      <DependentUpon>DeviceSelection.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LicenseWindow.xaml.resx">
       <DependentUpon>LicenseWindow.xaml.cs</DependentUpon>
     </EmbeddedResource>
@@ -156,7 +201,6 @@
     <None Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -189,6 +233,29 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup>
+    <Page Include="CustomersTooltip.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CsvHelper">
+      <Version>33.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="LiveCharts.Geared">
+      <Version>1.2.9</Version>
+    </PackageReference>
+    <PackageReference Include="LiveCharts.WinForms">
+      <Version>0.9.7.1</Version>
+    </PackageReference>
+    <PackageReference Include="log4net">
+      <Version>2.0.17</Version>
+    </PackageReference>
+    <PackageReference Include="System.CodeDom">
+      <Version>8.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if "$(DefineConstants.Contains('x64'))" == "True" (
@@ -207,18 +274,18 @@ copy $(ProjectDir)\ISC-NIRScan-Library\x64\msvcp140.dll $(TargetDir)
 copy $(ProjectDir)\ISC-NIRScan-Library\x64\vcruntime140.dll $(TargetDir)
 ) else (
 if "$(DefineConstants.Contains('DEBUG'))" == "True" (
-copy $(ProjectDir)\ISC-NIRScan-Library\isccs_d.* $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\isccpp_d.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\isccs_d.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\isccpp_d.* $(TargetDir)
 ) else (
-copy $(ProjectDir)\ISC-NIRScan-Library\isccs.* $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\isccpp.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\isccs.* $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\isccpp.* $(TargetDir)
 )
-copy $(ProjectDir)\ISC-NIRScan-Library\libdlpspec.dll $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\hidapi.dll $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\lmdfu.dll $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\lmusbdll.dll $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\msvcp140.dll $(TargetDir)
-copy $(ProjectDir)\ISC-NIRScan-Library\vcruntime140.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\libdlpspec.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\hidapi.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\lmdfu.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\lmusbdll.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\msvcp140.dll $(TargetDir)
+copy $(ProjectDir)\ISC-NIRScan-Library\x86\vcruntime140.dll $(TargetDir)
 )
 </PostBuildEvent>
   </PropertyGroup>

@@ -37,9 +37,15 @@ namespace ISC_Win_WinForm_GUI
             this.tabControl_MainFunctions = new System.Windows.Forms.TabControl();
             this.tabPage_Scan = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.panel_Tooltips = new System.Windows.Forms.Panel();
+            this.rb_tooltip4multi = new System.Windows.Forms.RadioButton();
+            this.rb_tooltip4single = new System.Windows.Forms.RadioButton();
+            this.checkBox_tooltip = new System.Windows.Forms.CheckBox();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.label_ContinuousMode = new System.Windows.Forms.Label();
+            this.MyChart = new LiveCharts.WinForms.CartesianChart();
             this.button_ExitCont = new System.Windows.Forms.Button();
             this.checkBox_zoom = new System.Windows.Forms.CheckBox();
-            this.checkBox_tooltip = new System.Windows.Forms.CheckBox();
             this.Check_Overlay = new System.Windows.Forms.CheckBox();
             this.Button_Scan = new System.Windows.Forms.Button();
             this.RadioButton_Reference = new System.Windows.Forms.RadioButton();
@@ -49,25 +55,29 @@ namespace ISC_Win_WinForm_GUI
             this.Label_EstimatedScanTime = new System.Windows.Forms.Label();
             this.Label_CurrentConfig = new System.Windows.Forms.Label();
             this.Label_ScanStatus = new System.Windows.Forms.Label();
-            this.MyChart = new LiveCharts.WinForms.CartesianChart();
             this.tabScanPage = new System.Windows.Forms.TabControl();
             this.tabPage_ScanSetting = new System.Windows.Forms.TabPage();
+            this.button_ClearPlots = new System.Windows.Forms.Button();
             this.Button_ClearAllErrors = new System.Windows.Forms.Button();
             this.GroupBox_ContScan = new System.Windows.Forms.GroupBox();
+            this.checkBox_AutoScan = new System.Windows.Forms.CheckBox();
             this.checkBox_StopOnError = new System.Windows.Forms.CheckBox();
             this.Label_ContScan = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
+            this.label_ContDelay = new System.Windows.Forms.Label();
             this.Text_ContDelay = new System.Windows.Forms.TextBox();
             this.label_ContinueScan = new System.Windows.Forms.Label();
             this.Text_ContScan = new System.Windows.Forms.TextBox();
             this.GroupBox_GainControl = new System.Windows.Forms.GroupBox();
             this.CheckBox_AutoGain = new System.Windows.Forms.CheckBox();
-            this.ComboBox_PGAGain = new System.Windows.Forms.ComboBox();
+            this.ComboBox_PGAGain = new MyComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.GroupBox_SaveScan = new System.Windows.Forms.GroupBox();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.CheckBox_SaveJDX = new System.Windows.Forms.CheckBox();
             this.checkBox_EnableBlackLevelData = new System.Windows.Forms.CheckBox();
             this.CheckBox_AverageCSV = new System.Windows.Forms.CheckBox();
-            this.label17 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.TextBox_FileNamePrefix3 = new System.Windows.Forms.TextBox();
@@ -86,6 +96,7 @@ namespace ISC_Win_WinForm_GUI
             this.CheckBox_SaveICSV = new System.Windows.Forms.CheckBox();
             this.CheckBox_SaveCombCSV = new System.Windows.Forms.CheckBox();
             this.GroupBox_ScanAvg = new System.Windows.Forms.GroupBox();
+            this.Button_SaveNumAvgToConfig = new System.Windows.Forms.Button();
             this.textBox_ScanAvg = new System.Windows.Forms.TextBox();
             this.label34 = new System.Windows.Forms.Label();
             this.GroupBox_LampControl = new System.Windows.Forms.GroupBox();
@@ -119,21 +130,13 @@ namespace ISC_Win_WinForm_GUI
             this.Button_CfgEdit = new System.Windows.Forms.Button();
             this.Button_CfgNew = new System.Windows.Forms.Button();
             this.GroupBox_CfgDetails = new System.Windows.Forms.GroupBox();
-            this.label_totalPatterns = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
-            this.label_maxPattern5 = new System.Windows.Forms.Label();
-            this.label_maxPattern4 = new System.Windows.Forms.Label();
-            this.label_maxPattern3 = new System.Windows.Forms.Label();
-            this.label_maxPattern2 = new System.Windows.Forms.Label();
-            this.label_maxPattern1 = new System.Windows.Forms.Label();
+            this.label_overSampleRate5 = new System.Windows.Forms.Label();
+            this.label_overSampleRate4 = new System.Windows.Forms.Label();
+            this.label_overSampleRate3 = new System.Windows.Forms.Label();
+            this.label_overSampleRate2 = new System.Windows.Forms.Label();
+            this.label_overSampleRate1 = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
-            this.label_pattern5 = new System.Windows.Forms.Label();
-            this.label_pattern4 = new System.Windows.Forms.Label();
-            this.label_pattern3 = new System.Windows.Forms.Label();
-            this.label_pattern2 = new System.Windows.Forms.Label();
-            this.label_pattern1 = new System.Windows.Forms.Label();
-            this.comboBox_cfgNumSec = new System.Windows.Forms.ComboBox();
-            this.Label_CfgNumPatterns = new System.Windows.Forms.Label();
+            this.comboBox_cfgNumSec = new MyComboBox();
             this.label93 = new System.Windows.Forms.Label();
             this.label92 = new System.Windows.Forms.Label();
             this.label91 = new System.Windows.Forms.Label();
@@ -150,11 +153,11 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure3 = new System.Windows.Forms.ComboBox();
             this.ComboBox_CfgExposure4 = new System.Windows.Forms.ComboBox();
             this.ComboBox_CfgExposure5 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgWidth1 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgWidth2 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgWidth3 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgWidth4 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgWidth5 = new System.Windows.Forms.ComboBox();
+            this.ComboBox_CfgWidth1 = new MyComboBox();
+            this.ComboBox_CfgWidth2 = new MyComboBox();
+            this.ComboBox_CfgWidth3 = new MyComboBox();
+            this.ComboBox_CfgWidth4 = new MyComboBox();
+            this.ComboBox_CfgWidth5 = new MyComboBox();
             this.TextBox_CfgRangeEnd1 = new System.Windows.Forms.TextBox();
             this.TextBox_CfgRangeEnd2 = new System.Windows.Forms.TextBox();
             this.TextBox_CfgRangeEnd3 = new System.Windows.Forms.TextBox();
@@ -164,12 +167,12 @@ namespace ISC_Win_WinForm_GUI
             this.TextBox_CfgRangeStart2 = new System.Windows.Forms.TextBox();
             this.TextBox_CfgRangeStart3 = new System.Windows.Forms.TextBox();
             this.TextBox_CfgRangeStart4 = new System.Windows.Forms.TextBox();
-            this.ComboBox_CfgScanType1 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgScanType2 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgScanType3 = new System.Windows.Forms.ComboBox();
-            this.ComboBox_CfgScanType4 = new System.Windows.Forms.ComboBox();
             this.TextBox_CfgRangeStart5 = new System.Windows.Forms.TextBox();
-            this.ComboBox_CfgScanType5 = new System.Windows.Forms.ComboBox();
+            this.ComboBox_CfgScanType1 = new MyComboBox();
+            this.ComboBox_CfgScanType2 = new MyComboBox();
+            this.ComboBox_CfgScanType3 = new MyComboBox();
+            this.ComboBox_CfgScanType4 = new MyComboBox();
+            this.ComboBox_CfgScanType5 = new MyComboBox();
             this.label87 = new System.Windows.Forms.Label();
             this.label86 = new System.Windows.Forms.Label();
             this.label85 = new System.Windows.Forms.Label();
@@ -182,6 +185,8 @@ namespace ISC_Win_WinForm_GUI
             this.label80 = new System.Windows.Forms.Label();
             this.tabPage_SaveScans = new System.Windows.Forms.TabPage();
             this.panel_Saved_Scan = new System.Windows.Forms.Panel();
+            this.label2 = new System.Windows.Forms.Label();
+            this.btn_FileListRefresh = new System.Windows.Forms.Button();
             this.RadioButton_SavedScanSelDat = new System.Windows.Forms.RadioButton();
             this.RadioButton_SavedScanSelCsv = new System.Windows.Forms.RadioButton();
             this.totalScan = new System.Windows.Forms.Label();
@@ -249,6 +254,7 @@ namespace ISC_Win_WinForm_GUI
             this.Button_Clear_BLE_Display_Name = new System.Windows.Forms.Button();
             this.TextBox_BLE_Display_Name = new System.Windows.Forms.TextBox();
             this.groupBox_Device = new System.Windows.Forms.GroupBox();
+            this.button_SwitchDevice = new System.Windows.Forms.Button();
             this.textBox_FanOffTime = new System.Windows.Forms.TextBox();
             this.Button_GetFanDelayOffTime = new System.Windows.Forms.Button();
             this.Button_SetFanDelayOffTime = new System.Windows.Forms.Button();
@@ -367,8 +373,10 @@ namespace ISC_Win_WinForm_GUI
             this.TextBox_ModelName = new System.Windows.Forms.TextBox();
             this.tabPage_about = new System.Windows.Forms.TabPage();
             this.groupBox_About = new System.Windows.Forms.GroupBox();
-            this.lb_GUI_Version = new System.Windows.Forms.Label();
-            this.label12 = new System.Windows.Forms.Label();
+            this.button_disableUACAlert = new System.Windows.Forms.Button();
+            this.label_DisableUACAlert = new System.Windows.Forms.Label();
+            this.lb_GUI_Revision = new System.Windows.Forms.Label();
+            this.label_GUIVersion = new System.Windows.Forms.Label();
             this.button_About = new System.Windows.Forms.Button();
             this.button_AboutLicense = new System.Windows.Forms.Button();
             this.label_about_us = new System.Windows.Forms.Label();
@@ -383,6 +391,8 @@ namespace ISC_Win_WinForm_GUI
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            this.panel_Tooltips.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.tabScanPage.SuspendLayout();
             this.tabPage_ScanSetting.SuspendLayout();
             this.GroupBox_ContScan.SuspendLayout();
@@ -419,7 +429,7 @@ namespace ISC_Win_WinForm_GUI
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatus_DeviceStatus});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 657);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 664);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1264, 25);
             this.statusStrip1.TabIndex = 1;
@@ -429,7 +439,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.toolStripStatus_DeviceStatus.Image = ((System.Drawing.Image)(resources.GetObject("toolStripStatus_DeviceStatus.Image")));
             this.toolStripStatus_DeviceStatus.Name = "toolStripStatus_DeviceStatus";
-            this.toolStripStatus_DeviceStatus.Size = new System.Drawing.Size(127, 20);
+            this.toolStripStatus_DeviceStatus.Size = new System.Drawing.Size(134, 20);
             this.toolStripStatus_DeviceStatus.Text = "Device Disconnect!";
             // 
             // tabControl_MainFunctions
@@ -441,35 +451,34 @@ namespace ISC_Win_WinForm_GUI
             this.tabControl_MainFunctions.Location = new System.Drawing.Point(0, 0);
             this.tabControl_MainFunctions.Name = "tabControl_MainFunctions";
             this.tabControl_MainFunctions.SelectedIndex = 0;
-            this.tabControl_MainFunctions.Size = new System.Drawing.Size(1264, 657);
+            this.tabControl_MainFunctions.Size = new System.Drawing.Size(1264, 664);
             this.tabControl_MainFunctions.TabIndex = 2;
             this.tabControl_MainFunctions.SelectedIndexChanged += new System.EventHandler(this.tabControl_MainFunctions_SelectedIndexChanged);
+            this.tabControl_MainFunctions.Selecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabPage_Selecting);
+            this.tabControl_MainFunctions.Deselecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabPage_Deselecting);
             // 
             // tabPage_Scan
             // 
             this.tabPage_Scan.Controls.Add(this.splitContainer1);
-            this.tabPage_Scan.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.tabPage_Scan.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_Scan.Location = new System.Drawing.Point(4, 22);
             this.tabPage_Scan.Name = "tabPage_Scan";
             this.tabPage_Scan.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage_Scan.Size = new System.Drawing.Size(1256, 630);
+            this.tabPage_Scan.Size = new System.Drawing.Size(1256, 638);
             this.tabPage_Scan.TabIndex = 0;
             this.tabPage_Scan.Text = "Scan";
             this.tabPage_Scan.UseVisualStyleBackColor = true;
             // 
             // splitContainer1
             // 
-            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.splitContainer1.Location = new System.Drawing.Point(3, 3);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.panel_Tooltips);
+            this.splitContainer1.Panel1.Controls.Add(this.panel1);
             this.splitContainer1.Panel1.Controls.Add(this.button_ExitCont);
             this.splitContainer1.Panel1.Controls.Add(this.checkBox_zoom);
-            this.splitContainer1.Panel1.Controls.Add(this.checkBox_tooltip);
             this.splitContainer1.Panel1.Controls.Add(this.Check_Overlay);
             this.splitContainer1.Panel1.Controls.Add(this.Button_Scan);
             this.splitContainer1.Panel1.Controls.Add(this.RadioButton_Reference);
@@ -479,23 +488,107 @@ namespace ISC_Win_WinForm_GUI
             this.splitContainer1.Panel1.Controls.Add(this.Label_EstimatedScanTime);
             this.splitContainer1.Panel1.Controls.Add(this.Label_CurrentConfig);
             this.splitContainer1.Panel1.Controls.Add(this.Label_ScanStatus);
-            this.splitContainer1.Panel1.Controls.Add(this.MyChart);
-            this.splitContainer1.Panel1MinSize = 845;
+            this.splitContainer1.Panel1MinSize = 840;
             // 
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tabScanPage);
             this.splitContainer1.Panel2MinSize = 400;
-            this.splitContainer1.Size = new System.Drawing.Size(1250, 624);
-            this.splitContainer1.SplitterDistance = 845;
+            this.splitContainer1.Size = new System.Drawing.Size(1250, 638);
+            this.splitContainer1.SplitterDistance = 840;
             this.splitContainer1.TabIndex = 0;
+            // 
+            // panel_Tooltips
+            // 
+            this.panel_Tooltips.Controls.Add(this.rb_tooltip4multi);
+            this.panel_Tooltips.Controls.Add(this.rb_tooltip4single);
+            this.panel_Tooltips.Controls.Add(this.checkBox_tooltip);
+            this.panel_Tooltips.Location = new System.Drawing.Point(446, 610);
+            this.panel_Tooltips.Margin = new System.Windows.Forms.Padding(2);
+            this.panel_Tooltips.Name = "panel_Tooltips";
+            this.panel_Tooltips.Size = new System.Drawing.Size(211, 24);
+            this.panel_Tooltips.TabIndex = 17;
+            this.panel_Tooltips.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panel_Tooltips_MouseClick);
+            // 
+            // rb_tooltip4multi
+            // 
+            this.rb_tooltip4multi.AutoSize = true;
+            this.rb_tooltip4multi.Location = new System.Drawing.Point(136, 5);
+            this.rb_tooltip4multi.Margin = new System.Windows.Forms.Padding(2);
+            this.rb_tooltip4multi.Name = "rb_tooltip4multi";
+            this.rb_tooltip4multi.Size = new System.Drawing.Size(64, 17);
+            this.rb_tooltip4multi.TabIndex = 14;
+            this.rb_tooltip4multi.Text = "Multiple";
+            this.toolTip1.SetToolTip(this.rb_tooltip4multi, "Show all the Y values of the same selected X ");
+            this.rb_tooltip4multi.UseVisualStyleBackColor = true;
+            this.rb_tooltip4multi.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panel_Tooltips_MouseClick);
+            // 
+            // rb_tooltip4single
+            // 
+            this.rb_tooltip4single.AutoSize = true;
+            this.rb_tooltip4single.Checked = true;
+            this.rb_tooltip4single.Location = new System.Drawing.Point(71, 5);
+            this.rb_tooltip4single.Margin = new System.Windows.Forms.Padding(2);
+            this.rb_tooltip4single.Name = "rb_tooltip4single";
+            this.rb_tooltip4single.Size = new System.Drawing.Size(53, 17);
+            this.rb_tooltip4single.TabIndex = 13;
+            this.rb_tooltip4single.TabStop = true;
+            this.rb_tooltip4single.Text = "Single";
+            this.toolTip1.SetToolTip(this.rb_tooltip4single, "Show the only Y value of the selected line ");
+            this.rb_tooltip4single.UseVisualStyleBackColor = true;
+            this.rb_tooltip4single.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panel_Tooltips_MouseClick);
+            // 
+            // checkBox_tooltip
+            // 
+            this.checkBox_tooltip.AutoSize = true;
+            this.checkBox_tooltip.Location = new System.Drawing.Point(4, 6);
+            this.checkBox_tooltip.Name = "checkBox_tooltip";
+            this.checkBox_tooltip.Size = new System.Drawing.Size(57, 17);
+            this.checkBox_tooltip.TabIndex = 12;
+            this.checkBox_tooltip.TabStop = false;
+            this.checkBox_tooltip.Text = "Tooltip";
+            this.checkBox_tooltip.UseVisualStyleBackColor = true;
+            this.checkBox_tooltip.CheckedChanged += new System.EventHandler(this.checkBox_tooltip_CheckedChanged);
+            this.checkBox_tooltip.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panel_Tooltips_MouseClick);
+            // 
+            // panel1
+            // 
+            this.panel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.panel1.Controls.Add(this.label_ContinuousMode);
+            this.panel1.Controls.Add(this.MyChart);
+            this.panel1.Location = new System.Drawing.Point(3, 59);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(835, 520);
+            this.panel1.TabIndex = 16;
+            // 
+            // label_ContinuousMode
+            // 
+            this.label_ContinuousMode.AutoSize = true;
+            this.label_ContinuousMode.Font = new System.Drawing.Font("Calibri", 14.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_ContinuousMode.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.label_ContinuousMode.Location = new System.Drawing.Point(302, 464);
+            this.label_ContinuousMode.Name = "label_ContinuousMode";
+            this.label_ContinuousMode.Size = new System.Drawing.Size(255, 23);
+            this.label_ContinuousMode.TabIndex = 1;
+            this.label_ContinuousMode.Text = "Manual Continuous Scan Mode";
+            this.label_ContinuousMode.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label_ContinuousMode.Visible = false;
+            // 
+            // MyChart
+            // 
+            this.MyChart.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.MyChart.Location = new System.Drawing.Point(0, 0);
+            this.MyChart.Name = "MyChart";
+            this.MyChart.Size = new System.Drawing.Size(835, 520);
+            this.MyChart.TabIndex = 0;
+            this.MyChart.Text = "cartesianChart1";
             // 
             // button_ExitCont
             // 
-            this.button_ExitCont.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button_ExitCont.Location = new System.Drawing.Point(593, 566);
+            this.button_ExitCont.AutoSize = true;
+            this.button_ExitCont.Location = new System.Drawing.Point(623, 580);
             this.button_ExitCont.Name = "button_ExitCont";
-            this.button_ExitCont.Size = new System.Drawing.Size(75, 23);
+            this.button_ExitCont.Size = new System.Drawing.Size(75, 28);
             this.button_ExitCont.TabIndex = 15;
             this.button_ExitCont.Text = "Exit";
             this.button_ExitCont.UseVisualStyleBackColor = true;
@@ -504,37 +597,24 @@ namespace ISC_Win_WinForm_GUI
             // 
             // checkBox_zoom
             // 
-            this.checkBox_zoom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.checkBox_zoom.AutoSize = true;
-            this.checkBox_zoom.Location = new System.Drawing.Point(546, 594);
+            this.checkBox_zoom.Location = new System.Drawing.Point(450, 585);
             this.checkBox_zoom.Name = "checkBox_zoom";
-            this.checkBox_zoom.Size = new System.Drawing.Size(103, 18);
+            this.checkBox_zoom.Size = new System.Drawing.Size(92, 17);
             this.checkBox_zoom.TabIndex = 13;
             this.checkBox_zoom.TabStop = false;
             this.checkBox_zoom.Text = "Zoom and Pan";
+            this.toolTip1.SetToolTip(this.checkBox_zoom, "Select and mouse right-click to change zoom options");
             this.checkBox_zoom.UseVisualStyleBackColor = true;
             this.checkBox_zoom.CheckedChanged += new System.EventHandler(this.checkBox_zoom_CheckedChanged);
-            // 
-            // checkBox_tooltip
-            // 
-            this.checkBox_tooltip.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkBox_tooltip.AutoSize = true;
-            this.checkBox_tooltip.Location = new System.Drawing.Point(472, 595);
-            this.checkBox_tooltip.Name = "checkBox_tooltip";
-            this.checkBox_tooltip.Size = new System.Drawing.Size(66, 18);
-            this.checkBox_tooltip.TabIndex = 12;
-            this.checkBox_tooltip.TabStop = false;
-            this.checkBox_tooltip.Text = "ToolTip";
-            this.checkBox_tooltip.UseVisualStyleBackColor = true;
-            this.checkBox_tooltip.CheckedChanged += new System.EventHandler(this.checkBox_tooltip_CheckedChanged);
+            this.checkBox_zoom.MouseDown += new System.Windows.Forms.MouseEventHandler(this.checkBox_zoom_MouseClick);
             // 
             // Check_Overlay
             // 
-            this.Check_Overlay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.Check_Overlay.AutoSize = true;
-            this.Check_Overlay.Location = new System.Drawing.Point(472, 571);
+            this.Check_Overlay.Location = new System.Drawing.Point(555, 585);
             this.Check_Overlay.Name = "Check_Overlay";
-            this.Check_Overlay.Size = new System.Drawing.Size(66, 18);
+            this.Check_Overlay.Size = new System.Drawing.Size(62, 17);
             this.Check_Overlay.TabIndex = 9;
             this.Check_Overlay.TabStop = false;
             this.Check_Overlay.Text = "Overlay";
@@ -543,10 +623,10 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_Scan
             // 
-            this.Button_Scan.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.Button_Scan.Location = new System.Drawing.Point(674, 566);
+            this.Button_Scan.AutoSize = true;
+            this.Button_Scan.Location = new System.Drawing.Point(704, 580);
             this.Button_Scan.Name = "Button_Scan";
-            this.Button_Scan.Size = new System.Drawing.Size(132, 23);
+            this.Button_Scan.Size = new System.Drawing.Size(132, 30);
             this.Button_Scan.TabIndex = 8;
             this.Button_Scan.Text = "Scan";
             this.Button_Scan.UseVisualStyleBackColor = true;
@@ -554,68 +634,62 @@ namespace ISC_Win_WinForm_GUI
             // 
             // RadioButton_Reference
             // 
-            this.RadioButton_Reference.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.RadioButton_Reference.AutoSize = true;
-            this.RadioButton_Reference.Location = new System.Drawing.Point(359, 571);
+            this.RadioButton_Reference.Location = new System.Drawing.Point(338, 585);
             this.RadioButton_Reference.Name = "RadioButton_Reference";
-            this.RadioButton_Reference.Size = new System.Drawing.Size(80, 18);
+            this.RadioButton_Reference.Size = new System.Drawing.Size(73, 17);
             this.RadioButton_Reference.TabIndex = 7;
             this.RadioButton_Reference.Text = "Reference";
             this.RadioButton_Reference.UseVisualStyleBackColor = true;
-            this.RadioButton_Reference.CheckedChanged += new System.EventHandler(this.RadioButton_Reference_CheckedChanged);
+            this.RadioButton_Reference.CheckedChanged += new System.EventHandler(this.RadioButton_SpectrumData_CheckedChanged);
             // 
             // RadioButton_Intensity
             // 
-            this.RadioButton_Intensity.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.RadioButton_Intensity.AutoSize = true;
-            this.RadioButton_Intensity.Location = new System.Drawing.Point(256, 570);
+            this.RadioButton_Intensity.Location = new System.Drawing.Point(244, 585);
             this.RadioButton_Intensity.Name = "RadioButton_Intensity";
-            this.RadioButton_Intensity.Size = new System.Drawing.Size(73, 18);
+            this.RadioButton_Intensity.Size = new System.Drawing.Size(67, 17);
             this.RadioButton_Intensity.TabIndex = 6;
             this.RadioButton_Intensity.Text = "Intensity";
             this.RadioButton_Intensity.UseVisualStyleBackColor = true;
-            this.RadioButton_Intensity.CheckedChanged += new System.EventHandler(this.RadioButton_Intensity_CheckedChanged);
+            this.RadioButton_Intensity.CheckedChanged += new System.EventHandler(this.RadioButton_SpectrumData_CheckedChanged);
             // 
             // RadioButton_Absorbance
             // 
-            this.RadioButton_Absorbance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.RadioButton_Absorbance.AutoSize = true;
-            this.RadioButton_Absorbance.Location = new System.Drawing.Point(138, 570);
+            this.RadioButton_Absorbance.Location = new System.Drawing.Point(136, 585);
             this.RadioButton_Absorbance.Name = "RadioButton_Absorbance";
-            this.RadioButton_Absorbance.Size = new System.Drawing.Size(89, 18);
+            this.RadioButton_Absorbance.Size = new System.Drawing.Size(81, 17);
             this.RadioButton_Absorbance.TabIndex = 5;
             this.RadioButton_Absorbance.Text = "Absorbance";
             this.RadioButton_Absorbance.UseVisualStyleBackColor = true;
-            this.RadioButton_Absorbance.CheckedChanged += new System.EventHandler(this.RadioButton_Absorbance_CheckedChanged);
+            this.RadioButton_Absorbance.CheckedChanged += new System.EventHandler(this.RadioButton_SpectrumData_CheckedChanged);
             // 
             // RadioButton_Reflectance
             // 
-            this.RadioButton_Reflectance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.RadioButton_Reflectance.AutoSize = true;
-            this.RadioButton_Reflectance.Location = new System.Drawing.Point(23, 570);
+            this.RadioButton_Reflectance.Location = new System.Drawing.Point(27, 585);
             this.RadioButton_Reflectance.Name = "RadioButton_Reflectance";
-            this.RadioButton_Reflectance.Size = new System.Drawing.Size(87, 18);
+            this.RadioButton_Reflectance.Size = new System.Drawing.Size(81, 17);
             this.RadioButton_Reflectance.TabIndex = 4;
             this.RadioButton_Reflectance.Text = "Reflectance";
             this.RadioButton_Reflectance.UseVisualStyleBackColor = true;
-            this.RadioButton_Reflectance.CheckedChanged += new System.EventHandler(this.RadioButton_Reflectance_CheckedChanged);
+            this.RadioButton_Reflectance.CheckedChanged += new System.EventHandler(this.RadioButton_SpectrumData_CheckedChanged);
             // 
             // Label_EstimatedScanTime
             // 
-            this.Label_EstimatedScanTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.Label_EstimatedScanTime.Location = new System.Drawing.Point(574, 14);
+            this.Label_EstimatedScanTime.Location = new System.Drawing.Point(587, 39);
             this.Label_EstimatedScanTime.Name = "Label_EstimatedScanTime";
-            this.Label_EstimatedScanTime.Size = new System.Drawing.Size(252, 27);
+            this.Label_EstimatedScanTime.Size = new System.Drawing.Size(234, 27);
             this.Label_EstimatedScanTime.TabIndex = 3;
             // 
             // Label_CurrentConfig
             // 
-            this.Label_CurrentConfig.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.Label_CurrentConfig.Location = new System.Drawing.Point(315, 14);
             this.Label_CurrentConfig.Name = "Label_CurrentConfig";
             this.Label_CurrentConfig.Size = new System.Drawing.Size(235, 27);
             this.Label_CurrentConfig.TabIndex = 2;
-            this.toolTip1.SetToolTip(this.Label_CurrentConfig, "Current scan configuration for scan");
+            this.toolTip1.SetToolTip(this.Label_CurrentConfig, "Current scan configuration for scan.\r\nMouse click to quick change configuration.");
             this.Label_CurrentConfig.MouseClick += new System.Windows.Forms.MouseEventHandler(this.Label_CurrentConfig_MouseClick);
             // 
             // Label_ScanStatus
@@ -625,33 +699,24 @@ namespace ISC_Win_WinForm_GUI
             this.Label_ScanStatus.Size = new System.Drawing.Size(265, 27);
             this.Label_ScanStatus.TabIndex = 1;
             // 
-            // MyChart
-            // 
-            this.MyChart.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.MyChart.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.MyChart.Location = new System.Drawing.Point(23, 68);
-            this.MyChart.Name = "MyChart";
-            this.MyChart.Size = new System.Drawing.Size(749, 482);
-            this.MyChart.TabIndex = 0;
-            this.MyChart.Text = "cartesianChart1";
-            // 
             // tabScanPage
             // 
             this.tabScanPage.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.tabScanPage.Controls.Add(this.tabPage_ScanSetting);
             this.tabScanPage.Controls.Add(this.tabPage_ScanConfig);
             this.tabScanPage.Controls.Add(this.tabPage_SaveScans);
-            this.tabScanPage.Location = new System.Drawing.Point(0, 0);
+            this.tabScanPage.Location = new System.Drawing.Point(3, 0);
             this.tabScanPage.Name = "tabScanPage";
             this.tabScanPage.SelectedIndex = 0;
-            this.tabScanPage.Size = new System.Drawing.Size(401, 627);
+            this.tabScanPage.Size = new System.Drawing.Size(397, 635);
             this.tabScanPage.TabIndex = 0;
             this.tabScanPage.SelectedIndexChanged += new System.EventHandler(this.tabScanPage_SelectedIndexChanged);
+            this.tabScanPage.Selecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabPage_Selecting);
+            this.tabScanPage.Deselecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabPage_Deselecting);
             // 
             // tabPage_ScanSetting
             // 
+            this.tabPage_ScanSetting.Controls.Add(this.button_ClearPlots);
             this.tabPage_ScanSetting.Controls.Add(this.Button_ClearAllErrors);
             this.tabPage_ScanSetting.Controls.Add(this.GroupBox_ContScan);
             this.tabPage_ScanSetting.Controls.Add(this.GroupBox_GainControl);
@@ -659,29 +724,40 @@ namespace ISC_Win_WinForm_GUI
             this.tabPage_ScanSetting.Controls.Add(this.GroupBox_ScanAvg);
             this.tabPage_ScanSetting.Controls.Add(this.GroupBox_LampControl);
             this.tabPage_ScanSetting.Controls.Add(this.GroupBox_RefSelect);
-            this.tabPage_ScanSetting.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_ScanSetting.Location = new System.Drawing.Point(4, 22);
             this.tabPage_ScanSetting.Name = "tabPage_ScanSetting";
             this.tabPage_ScanSetting.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage_ScanSetting.Size = new System.Drawing.Size(393, 600);
+            this.tabPage_ScanSetting.Size = new System.Drawing.Size(389, 609);
             this.tabPage_ScanSetting.TabIndex = 0;
             this.tabPage_ScanSetting.Text = "Scan Setting";
             this.tabPage_ScanSetting.UseVisualStyleBackColor = true;
             // 
+            // button_ClearPlots
+            // 
+            this.button_ClearPlots.Location = new System.Drawing.Point(168, 578);
+            this.button_ClearPlots.Name = "button_ClearPlots";
+            this.button_ClearPlots.Size = new System.Drawing.Size(86, 23);
+            this.button_ClearPlots.TabIndex = 8;
+            this.button_ClearPlots.Text = "Clear Plots";
+            this.button_ClearPlots.UseVisualStyleBackColor = true;
+            this.button_ClearPlots.Click += new System.EventHandler(this.button_ClearPlots_Click);
+            // 
             // Button_ClearAllErrors
             // 
-            this.Button_ClearAllErrors.Location = new System.Drawing.Point(271, 571);
+            this.Button_ClearAllErrors.Location = new System.Drawing.Point(260, 578);
             this.Button_ClearAllErrors.Name = "Button_ClearAllErrors";
-            this.Button_ClearAllErrors.Size = new System.Drawing.Size(116, 23);
+            this.Button_ClearAllErrors.Size = new System.Drawing.Size(127, 23);
             this.Button_ClearAllErrors.TabIndex = 7;
-            this.Button_ClearAllErrors.Text = "Clear All Errors";
+            this.Button_ClearAllErrors.Text = "Clear Device Errors";
             this.Button_ClearAllErrors.UseVisualStyleBackColor = true;
             this.Button_ClearAllErrors.Click += new System.EventHandler(this.Button_ClearAllErrors_Click);
             // 
             // GroupBox_ContScan
             // 
+            this.GroupBox_ContScan.Controls.Add(this.checkBox_AutoScan);
             this.GroupBox_ContScan.Controls.Add(this.checkBox_StopOnError);
             this.GroupBox_ContScan.Controls.Add(this.Label_ContScan);
-            this.GroupBox_ContScan.Controls.Add(this.label3);
+            this.GroupBox_ContScan.Controls.Add(this.label_ContDelay);
             this.GroupBox_ContScan.Controls.Add(this.Text_ContDelay);
             this.GroupBox_ContScan.Controls.Add(this.label_ContinueScan);
             this.GroupBox_ContScan.Controls.Add(this.Text_ContScan);
@@ -692,14 +768,27 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_ContScan.TabStop = false;
             this.GroupBox_ContScan.Text = "Continuous Scan Select";
             // 
+            // checkBox_AutoScan
+            // 
+            this.checkBox_AutoScan.AutoSize = true;
+            this.checkBox_AutoScan.Checked = true;
+            this.checkBox_AutoScan.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBox_AutoScan.Location = new System.Drawing.Point(20, 57);
+            this.checkBox_AutoScan.Name = "checkBox_AutoScan";
+            this.checkBox_AutoScan.Size = new System.Drawing.Size(72, 17);
+            this.checkBox_AutoScan.TabIndex = 16;
+            this.checkBox_AutoScan.Text = "Auto Scan";
+            this.checkBox_AutoScan.UseVisualStyleBackColor = true;
+            this.checkBox_AutoScan.CheckedChanged += new System.EventHandler(this.checkBox_AutoScan_CheckedChanged);
+            // 
             // checkBox_StopOnError
             // 
             this.checkBox_StopOnError.AutoSize = true;
             this.checkBox_StopOnError.Checked = true;
             this.checkBox_StopOnError.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox_StopOnError.Location = new System.Drawing.Point(17, 51);
+            this.checkBox_StopOnError.Location = new System.Drawing.Point(114, 57);
             this.checkBox_StopOnError.Name = "checkBox_StopOnError";
-            this.checkBox_StopOnError.Size = new System.Drawing.Size(193, 18);
+            this.checkBox_StopOnError.Size = new System.Drawing.Size(170, 17);
             this.checkBox_StopOnError.TabIndex = 15;
             this.checkBox_StopOnError.TabStop = false;
             this.checkBox_StopOnError.Text = "Stop continuous scans on error";
@@ -710,48 +799,46 @@ namespace ISC_Win_WinForm_GUI
             this.Label_ContScan.AutoSize = true;
             this.Label_ContScan.Location = new System.Drawing.Point(151, 26);
             this.Label_ContScan.Name = "Label_ContScan";
-            this.Label_ContScan.Size = new System.Drawing.Size(32, 14);
+            this.Label_ContScan.Size = new System.Drawing.Size(29, 13);
             this.Label_ContScan.TabIndex = 14;
             this.Label_ContScan.Text = "(0/0)";
             // 
-            // label3
+            // label_ContDelay
             // 
-            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(215, 26);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(86, 14);
-            this.label3.TabIndex = 12;
-            this.label3.Text = "Scan Delay (s):";
+            this.label_ContDelay.AutoSize = true;
+            this.label_ContDelay.Location = new System.Drawing.Point(215, 26);
+            this.label_ContDelay.Name = "label_ContDelay";
+            this.label_ContDelay.Size = new System.Drawing.Size(74, 13);
+            this.label_ContDelay.TabIndex = 12;
+            this.label_ContDelay.Text = "Scan Delay (s):";
             // 
             // Text_ContDelay
             // 
-            this.Text_ContDelay.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.Text_ContDelay.Location = new System.Drawing.Point(307, 23);
             this.Text_ContDelay.Name = "Text_ContDelay";
-            this.Text_ContDelay.Size = new System.Drawing.Size(71, 22);
+            this.Text_ContDelay.Size = new System.Drawing.Size(71, 21);
             this.Text_ContDelay.TabIndex = 13;
             this.Text_ContDelay.Text = "0";
+            this.Text_ContDelay.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // label_ContinueScan
             // 
-            this.label_ContinueScan.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.label_ContinueScan.AutoSize = true;
             this.label_ContinueScan.Location = new System.Drawing.Point(14, 26);
             this.label_ContinueScan.Name = "label_ContinueScan";
-            this.label_ContinueScan.Size = new System.Drawing.Size(65, 14);
+            this.label_ContinueScan.Size = new System.Drawing.Size(59, 13);
             this.label_ContinueScan.TabIndex = 10;
             this.label_ContinueScan.Text = "Cont. Scan:";
             this.label_ContinueScan.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_ContinueScan_MouseDoubleClick);
             // 
             // Text_ContScan
             // 
-            this.Text_ContScan.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.Text_ContScan.Location = new System.Drawing.Point(88, 23);
             this.Text_ContScan.Name = "Text_ContScan";
-            this.Text_ContScan.Size = new System.Drawing.Size(57, 22);
+            this.Text_ContScan.Size = new System.Drawing.Size(57, 21);
             this.Text_ContScan.TabIndex = 11;
             this.Text_ContScan.Text = "1";
+            this.Text_ContScan.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.Text_ContScan.TextChanged += new System.EventHandler(this.Text_ContScan_TextChanged);
             this.Text_ContScan.Validated += new System.EventHandler(this.Text_ContScan_Validated);
             // 
@@ -765,16 +852,16 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_GainControl.Size = new System.Drawing.Size(384, 55);
             this.GroupBox_GainControl.TabIndex = 3;
             this.GroupBox_GainControl.TabStop = false;
-            this.GroupBox_GainControl.Text = "GainControl";
+            this.GroupBox_GainControl.Text = "Gain Control";
             // 
             // CheckBox_AutoGain
             // 
             this.CheckBox_AutoGain.AutoSize = true;
             this.CheckBox_AutoGain.Checked = true;
             this.CheckBox_AutoGain.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CheckBox_AutoGain.Location = new System.Drawing.Point(270, 23);
+            this.CheckBox_AutoGain.Location = new System.Drawing.Point(161, 26);
             this.CheckBox_AutoGain.Name = "CheckBox_AutoGain";
-            this.CheckBox_AutoGain.Size = new System.Drawing.Size(51, 18);
+            this.CheckBox_AutoGain.Size = new System.Drawing.Size(48, 17);
             this.CheckBox_AutoGain.TabIndex = 2;
             this.CheckBox_AutoGain.TabStop = false;
             this.CheckBox_AutoGain.Text = "Auto";
@@ -783,6 +870,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_PGAGain
             // 
+            this.ComboBox_PGAGain.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_PGAGain.FormattingEnabled = true;
             this.ComboBox_PGAGain.Items.AddRange(new object[] {
             "1",
@@ -792,26 +880,29 @@ namespace ISC_Win_WinForm_GUI
             "16",
             "32",
             "64"});
-            this.ComboBox_PGAGain.Location = new System.Drawing.Point(158, 21);
+            this.ComboBox_PGAGain.Location = new System.Drawing.Point(76, 22);
             this.ComboBox_PGAGain.Name = "ComboBox_PGAGain";
-            this.ComboBox_PGAGain.Size = new System.Drawing.Size(100, 22);
+            this.ComboBox_PGAGain.Size = new System.Drawing.Size(72, 22);
             this.ComboBox_PGAGain.TabIndex = 1;
             this.ComboBox_PGAGain.TabStop = false;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(17, 24);
+            this.label1.Location = new System.Drawing.Point(14, 27);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(57, 14);
+            this.label1.Size = new System.Drawing.Size(50, 13);
             this.label1.TabIndex = 0;
             this.label1.Text = "PGA Gain";
             // 
             // GroupBox_SaveScan
             // 
+            this.GroupBox_SaveScan.Controls.Add(this.label7);
+            this.GroupBox_SaveScan.Controls.Add(this.label6);
+            this.GroupBox_SaveScan.Controls.Add(this.label3);
+            this.GroupBox_SaveScan.Controls.Add(this.CheckBox_SaveJDX);
             this.GroupBox_SaveScan.Controls.Add(this.checkBox_EnableBlackLevelData);
             this.GroupBox_SaveScan.Controls.Add(this.CheckBox_AverageCSV);
-            this.GroupBox_SaveScan.Controls.Add(this.label17);
             this.GroupBox_SaveScan.Controls.Add(this.label11);
             this.GroupBox_SaveScan.Controls.Add(this.label10);
             this.GroupBox_SaveScan.Controls.Add(this.TextBox_FileNamePrefix3);
@@ -831,18 +922,53 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_SaveScan.Controls.Add(this.CheckBox_SaveCombCSV);
             this.GroupBox_SaveScan.Location = new System.Drawing.Point(3, 370);
             this.GroupBox_SaveScan.Name = "GroupBox_SaveScan";
-            this.GroupBox_SaveScan.Size = new System.Drawing.Size(384, 173);
+            this.GroupBox_SaveScan.Size = new System.Drawing.Size(384, 195);
             this.GroupBox_SaveScan.TabIndex = 6;
             this.GroupBox_SaveScan.TabStop = false;
             this.GroupBox_SaveScan.Text = "Save Scan As";
             this.GroupBox_SaveScan.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.GroupBox_SaveScan_MouseDoubleClick);
             // 
+            // label7
+            // 
+            this.label7.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.label7.Location = new System.Drawing.Point(23, 113);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(330, 2);
+            this.label7.TabIndex = 25;
+            // 
+            // label6
+            // 
+            this.label6.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.label6.Location = new System.Drawing.Point(23, 88);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(330, 2);
+            this.label6.TabIndex = 24;
+            // 
+            // label3
+            // 
+            this.label3.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.label3.Location = new System.Drawing.Point(23, 40);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(330, 2);
+            this.label3.TabIndex = 23;
+            // 
+            // CheckBox_SaveJDX
+            // 
+            this.CheckBox_SaveJDX.AutoSize = true;
+            this.CheckBox_SaveJDX.Location = new System.Drawing.Point(23, 93);
+            this.CheckBox_SaveJDX.Name = "CheckBox_SaveJDX";
+            this.CheckBox_SaveJDX.Size = new System.Drawing.Size(48, 17);
+            this.CheckBox_SaveJDX.TabIndex = 22;
+            this.CheckBox_SaveJDX.Text = "*.jdx";
+            this.CheckBox_SaveJDX.UseVisualStyleBackColor = true;
+            this.CheckBox_SaveJDX.CheckedChanged += new System.EventHandler(this.CheckBox_SaveFileFormat_Click);
+            // 
             // checkBox_EnableBlackLevelData
             // 
             this.checkBox_EnableBlackLevelData.AutoSize = true;
-            this.checkBox_EnableBlackLevelData.Location = new System.Drawing.Point(20, 149);
+            this.checkBox_EnableBlackLevelData.Location = new System.Drawing.Point(23, 172);
             this.checkBox_EnableBlackLevelData.Name = "checkBox_EnableBlackLevelData";
-            this.checkBox_EnableBlackLevelData.Size = new System.Drawing.Size(251, 18);
+            this.checkBox_EnableBlackLevelData.Size = new System.Drawing.Size(220, 17);
             this.checkBox_EnableBlackLevelData.TabIndex = 8;
             this.checkBox_EnableBlackLevelData.Text = "Save Scan Black Level and Lamp ADC Data";
             this.checkBox_EnableBlackLevelData.UseVisualStyleBackColor = true;
@@ -851,54 +977,45 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_AverageCSV
             // 
             this.CheckBox_AverageCSV.AutoSize = true;
-            this.CheckBox_AverageCSV.Location = new System.Drawing.Point(205, 23);
+            this.CheckBox_AverageCSV.Location = new System.Drawing.Point(198, 69);
             this.CheckBox_AverageCSV.Name = "CheckBox_AverageCSV";
-            this.CheckBox_AverageCSV.Size = new System.Drawing.Size(92, 18);
+            this.CheckBox_AverageCSV.Size = new System.Drawing.Size(85, 17);
             this.CheckBox_AverageCSV.TabIndex = 21;
             this.CheckBox_AverageCSV.Text = "-average.csv";
             this.CheckBox_AverageCSV.UseVisualStyleBackColor = true;
             // 
-            // label17
-            // 
-            this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(41, 71);
-            this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(25, 14);
-            this.label17.TabIndex = 20;
-            this.label17.Text = ".jdx";
-            // 
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(273, 129);
+            this.label11.Location = new System.Drawing.Point(275, 124);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(13, 14);
+            this.label11.Size = new System.Drawing.Size(12, 13);
             this.label11.TabIndex = 19;
             this.label11.Text = "_";
             // 
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(196, 129);
+            this.label10.Location = new System.Drawing.Point(194, 124);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(13, 14);
+            this.label10.Size = new System.Drawing.Size(12, 13);
             this.label10.TabIndex = 18;
             this.label10.Text = "_";
             // 
             // TextBox_FileNamePrefix3
             // 
-            this.TextBox_FileNamePrefix3.Location = new System.Drawing.Point(288, 124);
+            this.TextBox_FileNamePrefix3.Location = new System.Drawing.Point(292, 118);
             this.TextBox_FileNamePrefix3.Name = "TextBox_FileNamePrefix3";
-            this.TextBox_FileNamePrefix3.Size = new System.Drawing.Size(60, 22);
+            this.TextBox_FileNamePrefix3.Size = new System.Drawing.Size(60, 21);
             this.TextBox_FileNamePrefix3.TabIndex = 14;
             this.TextBox_FileNamePrefix3.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_FileNamePrefix3.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.TextBox_KeyPress);
             // 
             // TextBox_FileNamePrefix2
             // 
-            this.TextBox_FileNamePrefix2.Location = new System.Drawing.Point(211, 124);
+            this.TextBox_FileNamePrefix2.Location = new System.Drawing.Point(211, 118);
             this.TextBox_FileNamePrefix2.Name = "TextBox_FileNamePrefix2";
-            this.TextBox_FileNamePrefix2.Size = new System.Drawing.Size(60, 22);
+            this.TextBox_FileNamePrefix2.Size = new System.Drawing.Size(60, 21);
             this.TextBox_FileNamePrefix2.TabIndex = 13;
             this.TextBox_FileNamePrefix2.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_FileNamePrefix2.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.TextBox_KeyPress);
@@ -906,9 +1023,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveRJDX
             // 
             this.CheckBox_SaveRJDX.AutoSize = true;
-            this.CheckBox_SaveRJDX.Location = new System.Drawing.Point(268, 71);
+            this.CheckBox_SaveRJDX.Location = new System.Drawing.Point(271, 93);
             this.CheckBox_SaveRJDX.Name = "CheckBox_SaveRJDX";
-            this.CheckBox_SaveRJDX.Size = new System.Drawing.Size(89, 18);
+            this.CheckBox_SaveRJDX.Size = new System.Drawing.Size(83, 17);
             this.CheckBox_SaveRJDX.TabIndex = 8;
             this.CheckBox_SaveRJDX.TabStop = false;
             this.CheckBox_SaveRJDX.Text = "-reflectance";
@@ -918,9 +1035,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveOneCSV
             // 
             this.CheckBox_SaveOneCSV.AutoSize = true;
-            this.CheckBox_SaveOneCSV.Location = new System.Drawing.Point(88, 23);
+            this.CheckBox_SaveOneCSV.Location = new System.Drawing.Point(91, 69);
             this.CheckBox_SaveOneCSV.Name = "CheckBox_SaveOneCSV";
-            this.CheckBox_SaveOneCSV.Size = new System.Drawing.Size(103, 18);
+            this.CheckBox_SaveOneCSV.Size = new System.Drawing.Size(94, 17);
             this.CheckBox_SaveOneCSV.TabIndex = 2;
             this.CheckBox_SaveOneCSV.TabStop = false;
             this.CheckBox_SaveOneCSV.Text = "-combined.csv";
@@ -932,21 +1049,22 @@ namespace ISC_Win_WinForm_GUI
             this.CheckBox_SaveDAT.AutoSize = true;
             this.CheckBox_SaveDAT.Checked = true;
             this.CheckBox_SaveDAT.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CheckBox_SaveDAT.Location = new System.Drawing.Point(20, 23);
+            this.CheckBox_SaveDAT.Location = new System.Drawing.Point(23, 20);
             this.CheckBox_SaveDAT.Name = "CheckBox_SaveDAT";
-            this.CheckBox_SaveDAT.Size = new System.Drawing.Size(53, 18);
+            this.CheckBox_SaveDAT.Size = new System.Drawing.Size(50, 17);
             this.CheckBox_SaveDAT.TabIndex = 1;
             this.CheckBox_SaveDAT.TabStop = false;
             this.CheckBox_SaveDAT.Text = "*.dat";
             this.CheckBox_SaveDAT.UseVisualStyleBackColor = true;
             this.CheckBox_SaveDAT.CheckedChanged += new System.EventHandler(this.CheckBox_SaveFileFormat_Click);
+            this.CheckBox_SaveDAT.MouseLeave += new System.EventHandler(this.CheckBox_SaveDAT_MouseLeave);
             // 
             // CheckBox_SaveAJDX
             // 
             this.CheckBox_SaveAJDX.AutoSize = true;
-            this.CheckBox_SaveAJDX.Location = new System.Drawing.Point(171, 71);
+            this.CheckBox_SaveAJDX.Location = new System.Drawing.Point(174, 93);
             this.CheckBox_SaveAJDX.Name = "CheckBox_SaveAJDX";
-            this.CheckBox_SaveAJDX.Size = new System.Drawing.Size(94, 18);
+            this.CheckBox_SaveAJDX.Size = new System.Drawing.Size(85, 17);
             this.CheckBox_SaveAJDX.TabIndex = 7;
             this.CheckBox_SaveAJDX.TabStop = false;
             this.CheckBox_SaveAJDX.Text = "-absorbance";
@@ -956,9 +1074,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveIJDX
             // 
             this.CheckBox_SaveIJDX.AutoSize = true;
-            this.CheckBox_SaveIJDX.Location = new System.Drawing.Point(88, 71);
+            this.CheckBox_SaveIJDX.Location = new System.Drawing.Point(91, 93);
             this.CheckBox_SaveIJDX.Name = "CheckBox_SaveIJDX";
-            this.CheckBox_SaveIJDX.Size = new System.Drawing.Size(78, 18);
+            this.CheckBox_SaveIJDX.Size = new System.Drawing.Size(71, 17);
             this.CheckBox_SaveIJDX.TabIndex = 6;
             this.CheckBox_SaveIJDX.TabStop = false;
             this.CheckBox_SaveIJDX.Text = "-intensity";
@@ -967,9 +1085,9 @@ namespace ISC_Win_WinForm_GUI
             // 
             // TextBox_FileNamePrefix1
             // 
-            this.TextBox_FileNamePrefix1.Location = new System.Drawing.Point(134, 124);
+            this.TextBox_FileNamePrefix1.Location = new System.Drawing.Point(130, 118);
             this.TextBox_FileNamePrefix1.Name = "TextBox_FileNamePrefix1";
-            this.TextBox_FileNamePrefix1.Size = new System.Drawing.Size(60, 22);
+            this.TextBox_FileNamePrefix1.Size = new System.Drawing.Size(60, 21);
             this.TextBox_FileNamePrefix1.TabIndex = 12;
             this.TextBox_FileNamePrefix1.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_FileNamePrefix1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.TextBox_KeyPress);
@@ -977,9 +1095,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_FileNamePrefix
             // 
             this.CheckBox_FileNamePrefix.AutoSize = true;
-            this.CheckBox_FileNamePrefix.Location = new System.Drawing.Point(20, 128);
+            this.CheckBox_FileNamePrefix.Location = new System.Drawing.Point(23, 122);
             this.CheckBox_FileNamePrefix.Name = "CheckBox_FileNamePrefix";
-            this.CheckBox_FileNamePrefix.Size = new System.Drawing.Size(113, 18);
+            this.CheckBox_FileNamePrefix.Size = new System.Drawing.Size(102, 17);
             this.CheckBox_FileNamePrefix.TabIndex = 11;
             this.CheckBox_FileNamePrefix.TabStop = false;
             this.CheckBox_FileNamePrefix.Text = "File Name Prefix";
@@ -988,18 +1106,18 @@ namespace ISC_Win_WinForm_GUI
             // 
             // TextBox_SaveDirPath
             // 
-            this.TextBox_SaveDirPath.Location = new System.Drawing.Point(20, 96);
+            this.TextBox_SaveDirPath.Location = new System.Drawing.Point(23, 144);
             this.TextBox_SaveDirPath.Name = "TextBox_SaveDirPath";
             this.TextBox_SaveDirPath.ReadOnly = true;
-            this.TextBox_SaveDirPath.Size = new System.Drawing.Size(269, 22);
+            this.TextBox_SaveDirPath.Size = new System.Drawing.Size(251, 21);
             this.TextBox_SaveDirPath.TabIndex = 9;
             this.TextBox_SaveDirPath.TabStop = false;
             // 
             // Button_SaveDirChange
             // 
-            this.Button_SaveDirChange.Location = new System.Drawing.Point(295, 95);
+            this.Button_SaveDirChange.Location = new System.Drawing.Point(280, 143);
             this.Button_SaveDirChange.Name = "Button_SaveDirChange";
-            this.Button_SaveDirChange.Size = new System.Drawing.Size(75, 23);
+            this.Button_SaveDirChange.Size = new System.Drawing.Size(72, 23);
             this.Button_SaveDirChange.TabIndex = 10;
             this.Button_SaveDirChange.Text = "Directory";
             this.Button_SaveDirChange.UseVisualStyleBackColor = true;
@@ -1008,9 +1126,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveRCSV
             // 
             this.CheckBox_SaveRCSV.AutoSize = true;
-            this.CheckBox_SaveRCSV.Location = new System.Drawing.Point(268, 47);
+            this.CheckBox_SaveRCSV.Location = new System.Drawing.Point(271, 46);
             this.CheckBox_SaveRCSV.Name = "CheckBox_SaveRCSV";
-            this.CheckBox_SaveRCSV.Size = new System.Drawing.Size(89, 18);
+            this.CheckBox_SaveRCSV.Size = new System.Drawing.Size(83, 17);
             this.CheckBox_SaveRCSV.TabIndex = 5;
             this.CheckBox_SaveRCSV.TabStop = false;
             this.CheckBox_SaveRCSV.Text = "-reflectance";
@@ -1020,9 +1138,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveACSV
             // 
             this.CheckBox_SaveACSV.AutoSize = true;
-            this.CheckBox_SaveACSV.Location = new System.Drawing.Point(171, 47);
+            this.CheckBox_SaveACSV.Location = new System.Drawing.Point(174, 46);
             this.CheckBox_SaveACSV.Name = "CheckBox_SaveACSV";
-            this.CheckBox_SaveACSV.Size = new System.Drawing.Size(94, 18);
+            this.CheckBox_SaveACSV.Size = new System.Drawing.Size(85, 17);
             this.CheckBox_SaveACSV.TabIndex = 4;
             this.CheckBox_SaveACSV.TabStop = false;
             this.CheckBox_SaveACSV.Text = "-absorbance";
@@ -1032,9 +1150,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_SaveICSV
             // 
             this.CheckBox_SaveICSV.AutoSize = true;
-            this.CheckBox_SaveICSV.Location = new System.Drawing.Point(88, 47);
+            this.CheckBox_SaveICSV.Location = new System.Drawing.Point(91, 46);
             this.CheckBox_SaveICSV.Name = "CheckBox_SaveICSV";
-            this.CheckBox_SaveICSV.Size = new System.Drawing.Size(78, 18);
+            this.CheckBox_SaveICSV.Size = new System.Drawing.Size(71, 17);
             this.CheckBox_SaveICSV.TabIndex = 3;
             this.CheckBox_SaveICSV.TabStop = false;
             this.CheckBox_SaveICSV.Text = "-intensity";
@@ -1046,17 +1164,21 @@ namespace ISC_Win_WinForm_GUI
             this.CheckBox_SaveCombCSV.AutoSize = true;
             this.CheckBox_SaveCombCSV.Checked = true;
             this.CheckBox_SaveCombCSV.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CheckBox_SaveCombCSV.Location = new System.Drawing.Point(20, 47);
+            this.CheckBox_SaveCombCSV.Location = new System.Drawing.Point(23, 46);
             this.CheckBox_SaveCombCSV.Name = "CheckBox_SaveCombCSV";
-            this.CheckBox_SaveCombCSV.Size = new System.Drawing.Size(51, 18);
+            this.CheckBox_SaveCombCSV.Size = new System.Drawing.Size(49, 17);
             this.CheckBox_SaveCombCSV.TabIndex = 0;
             this.CheckBox_SaveCombCSV.TabStop = false;
             this.CheckBox_SaveCombCSV.Text = "*.csv";
+            this.toolTip1.SetToolTip(this.CheckBox_SaveCombCSV, "Mouse right-click to change the output CSV delimiter.");
             this.CheckBox_SaveCombCSV.UseVisualStyleBackColor = true;
             this.CheckBox_SaveCombCSV.CheckedChanged += new System.EventHandler(this.CheckBox_SaveFileFormat_Click);
+            this.CheckBox_SaveCombCSV.MouseDown += new System.Windows.Forms.MouseEventHandler(this.CheckBox_SaveCombCSV_MouseClick);
+            this.CheckBox_SaveCombCSV.MouseLeave += new System.EventHandler(this.CheckBox_SaveCombCSV_MouseLeave);
             // 
             // GroupBox_ScanAvg
             // 
+            this.GroupBox_ScanAvg.Controls.Add(this.Button_SaveNumAvgToConfig);
             this.GroupBox_ScanAvg.Controls.Add(this.textBox_ScanAvg);
             this.GroupBox_ScanAvg.Controls.Add(this.label34);
             this.GroupBox_ScanAvg.Location = new System.Drawing.Point(3, 222);
@@ -1065,23 +1187,43 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_ScanAvg.TabIndex = 4;
             this.GroupBox_ScanAvg.TabStop = false;
             this.GroupBox_ScanAvg.Text = "Scan Average";
+            this.toolTip1.SetToolTip(this.GroupBox_ScanAvg, "The value is temporarily changed only. Click \"Apply to Config\" to save it into th" +
+        "e config permanently.");
+            // 
+            // Button_SaveNumAvgToConfig
+            // 
+            this.Button_SaveNumAvgToConfig.Enabled = false;
+            this.Button_SaveNumAvgToConfig.Location = new System.Drawing.Point(252, 18);
+            this.Button_SaveNumAvgToConfig.Name = "Button_SaveNumAvgToConfig";
+            this.Button_SaveNumAvgToConfig.Size = new System.Drawing.Size(126, 26);
+            this.Button_SaveNumAvgToConfig.TabIndex = 2;
+            this.Button_SaveNumAvgToConfig.Text = "Save to Config";
+            this.Button_SaveNumAvgToConfig.UseVisualStyleBackColor = true;
+            this.Button_SaveNumAvgToConfig.Click += new System.EventHandler(this.Button_SaveNumAvgToConfig_Click);
             // 
             // textBox_ScanAvg
             // 
-            this.textBox_ScanAvg.Location = new System.Drawing.Point(158, 21);
+            this.textBox_ScanAvg.Location = new System.Drawing.Point(139, 21);
             this.textBox_ScanAvg.Name = "textBox_ScanAvg";
-            this.textBox_ScanAvg.Size = new System.Drawing.Size(100, 22);
+            this.textBox_ScanAvg.Size = new System.Drawing.Size(104, 21);
             this.textBox_ScanAvg.TabIndex = 1;
+            this.textBox_ScanAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.toolTip1.SetToolTip(this.textBox_ScanAvg, "The value is temporarily changed for scan only. Click \"Save to Config\" to save it" +
+        " into the config permanently.");
             this.textBox_ScanAvg.TextChanged += new System.EventHandler(this.textBox_ScanAvg_TextChanged);
+            this.textBox_ScanAvg.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBox_ScanAvg_KeyPress);
+            this.textBox_ScanAvg.Validated += new System.EventHandler(this.textBox_ScanAvg_Validated);
             // 
             // label34
             // 
             this.label34.AutoSize = true;
             this.label34.Location = new System.Drawing.Point(17, 24);
             this.label34.Name = "label34";
-            this.label34.Size = new System.Drawing.Size(135, 14);
+            this.label34.Size = new System.Drawing.Size(116, 13);
             this.label34.TabIndex = 0;
             this.label34.Text = "Num Scans of Average : ";
+            this.toolTip1.SetToolTip(this.label34, "The value is temporarily changed only. Click \"Apply to Config\" to save it into th" +
+        "e config permanently.");
             // 
             // GroupBox_LampControl
             // 
@@ -1103,9 +1245,10 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_WarmUpTime.Location = new System.Drawing.Point(342, 18);
             this.TextBox_WarmUpTime.Name = "TextBox_WarmUpTime";
-            this.TextBox_WarmUpTime.Size = new System.Drawing.Size(36, 22);
+            this.TextBox_WarmUpTime.Size = new System.Drawing.Size(36, 21);
             this.TextBox_WarmUpTime.TabIndex = 5;
             this.TextBox_WarmUpTime.Text = "3";
+            this.TextBox_WarmUpTime.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.TextBox_WarmUpTime.TextChanged += new System.EventHandler(this.TextBox_WarmUpTime_TextChanged);
             // 
             // RadioButton_WarmUp
@@ -1113,7 +1256,7 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_WarmUp.AutoSize = true;
             this.RadioButton_WarmUp.Location = new System.Drawing.Point(209, 19);
             this.RadioButton_WarmUp.Name = "RadioButton_WarmUp";
-            this.RadioButton_WarmUp.Size = new System.Drawing.Size(136, 18);
+            this.RadioButton_WarmUp.Size = new System.Drawing.Size(120, 17);
             this.RadioButton_WarmUp.TabIndex = 4;
             this.RadioButton_WarmUp.TabStop = true;
             this.RadioButton_WarmUp.Text = "Warm-up (Unit: min)";
@@ -1123,9 +1266,9 @@ namespace ISC_Win_WinForm_GUI
             // CheckBox_LampOn
             // 
             this.CheckBox_LampOn.AutoSize = true;
-            this.CheckBox_LampOn.Location = new System.Drawing.Point(3, 20);
+            this.CheckBox_LampOn.Location = new System.Drawing.Point(6, 20);
             this.CheckBox_LampOn.Name = "CheckBox_LampOn";
-            this.CheckBox_LampOn.Size = new System.Drawing.Size(103, 18);
+            this.CheckBox_LampOn.Size = new System.Drawing.Size(93, 17);
             this.CheckBox_LampOn.TabIndex = 0;
             this.CheckBox_LampOn.TabStop = false;
             this.CheckBox_LampOn.Text = "Keep Lamp On";
@@ -1136,9 +1279,10 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_LampStableTime.Location = new System.Drawing.Point(264, 42);
             this.TextBox_LampStableTime.Name = "TextBox_LampStableTime";
-            this.TextBox_LampStableTime.Size = new System.Drawing.Size(114, 22);
+            this.TextBox_LampStableTime.Size = new System.Drawing.Size(114, 21);
             this.TextBox_LampStableTime.TabIndex = 3;
             this.TextBox_LampStableTime.Text = "625";
+            this.TextBox_LampStableTime.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.TextBox_LampStableTime.TextChanged += new System.EventHandler(this.TextBox_LampStableTime_TextChanged);
             this.TextBox_LampStableTime.Leave += new System.EventHandler(this.TextBox_LampStableTime_Leave);
             // 
@@ -1148,7 +1292,7 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_LampStableTime.Checked = true;
             this.RadioButton_LampStableTime.Location = new System.Drawing.Point(6, 43);
             this.RadioButton_LampStableTime.Name = "RadioButton_LampStableTime";
-            this.RadioButton_LampStableTime.Size = new System.Drawing.Size(252, 18);
+            this.RadioButton_LampStableTime.Size = new System.Drawing.Size(220, 17);
             this.RadioButton_LampStableTime.TabIndex = 2;
             this.RadioButton_LampStableTime.TabStop = true;
             this.RadioButton_LampStableTime.Text = "Lamp Stable Time  (Unit: ms, Default: 625)";
@@ -1160,7 +1304,7 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_LampOff.AutoSize = true;
             this.RadioButton_LampOff.Location = new System.Drawing.Point(107, 19);
             this.RadioButton_LampOff.Name = "RadioButton_LampOff";
-            this.RadioButton_LampOff.Size = new System.Drawing.Size(102, 18);
+            this.RadioButton_LampOff.Size = new System.Drawing.Size(92, 17);
             this.RadioButton_LampOff.TabIndex = 1;
             this.RadioButton_LampOff.Text = "Keep Lamp Off";
             this.RadioButton_LampOff.UseVisualStyleBackColor = true;
@@ -1171,7 +1315,7 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_LampOn.AutoSize = true;
             this.RadioButton_LampOn.Location = new System.Drawing.Point(6, 19);
             this.RadioButton_LampOn.Name = "RadioButton_LampOn";
-            this.RadioButton_LampOn.Size = new System.Drawing.Size(102, 18);
+            this.RadioButton_LampOn.Size = new System.Drawing.Size(92, 17);
             this.RadioButton_LampOn.TabIndex = 0;
             this.RadioButton_LampOn.Text = "Keep Lamp On";
             this.RadioButton_LampOn.UseVisualStyleBackColor = true;
@@ -1195,7 +1339,7 @@ namespace ISC_Win_WinForm_GUI
             this.label_ref.AutoSize = true;
             this.label_ref.Location = new System.Drawing.Point(21, 50);
             this.label_ref.Name = "label_ref";
-            this.label_ref.Size = new System.Drawing.Size(57, 14);
+            this.label_ref.Size = new System.Drawing.Size(49, 13);
             this.label_ref.TabIndex = 3;
             this.label_ref.Text = "label_ref";
             // 
@@ -1204,9 +1348,10 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_RefFac.AutoSize = true;
             this.RadioButton_RefFac.Location = new System.Drawing.Point(281, 21);
             this.RadioButton_RefFac.Name = "RadioButton_RefFac";
-            this.RadioButton_RefFac.Size = new System.Drawing.Size(66, 18);
+            this.RadioButton_RefFac.Size = new System.Drawing.Size(59, 17);
             this.RadioButton_RefFac.TabIndex = 2;
             this.RadioButton_RefFac.Text = "Built-in";
+            this.toolTip1.SetToolTip(this.RadioButton_RefFac, "Using the reference stored in device");
             this.RadioButton_RefFac.UseVisualStyleBackColor = true;
             this.RadioButton_RefFac.CheckedChanged += new System.EventHandler(this.RadioButton_RefFac_CheckedChanged);
             // 
@@ -1215,9 +1360,10 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_RefPre.AutoSize = true;
             this.RadioButton_RefPre.Location = new System.Drawing.Point(146, 21);
             this.RadioButton_RefPre.Name = "RadioButton_RefPre";
-            this.RadioButton_RefPre.Size = new System.Drawing.Size(71, 18);
+            this.RadioButton_RefPre.Size = new System.Drawing.Size(66, 17);
             this.RadioButton_RefPre.TabIndex = 1;
             this.RadioButton_RefPre.Text = "Previous";
+            this.toolTip1.SetToolTip(this.RadioButton_RefPre, "Using the local reference scanned by \"New\"");
             this.RadioButton_RefPre.UseVisualStyleBackColor = true;
             this.RadioButton_RefPre.CheckedChanged += new System.EventHandler(this.RadioButton_RefPre_CheckedChanged);
             // 
@@ -1227,10 +1373,11 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_RefNew.Checked = true;
             this.RadioButton_RefNew.Location = new System.Drawing.Point(20, 21);
             this.RadioButton_RefNew.Name = "RadioButton_RefNew";
-            this.RadioButton_RefNew.Size = new System.Drawing.Size(49, 18);
+            this.RadioButton_RefNew.Size = new System.Drawing.Size(46, 17);
             this.RadioButton_RefNew.TabIndex = 0;
             this.RadioButton_RefNew.TabStop = true;
             this.RadioButton_RefNew.Text = "New";
+            this.toolTip1.SetToolTip(this.RadioButton_RefNew, "Create a new local reference scan");
             this.RadioButton_RefNew.UseVisualStyleBackColor = true;
             this.RadioButton_RefNew.CheckedChanged += new System.EventHandler(this.RadioButton_RefNew_CheckedChanged);
             // 
@@ -1253,10 +1400,10 @@ namespace ISC_Win_WinForm_GUI
             this.tabPage_ScanConfig.Controls.Add(this.Button_CfgEdit);
             this.tabPage_ScanConfig.Controls.Add(this.Button_CfgNew);
             this.tabPage_ScanConfig.Controls.Add(this.GroupBox_CfgDetails);
-            this.tabPage_ScanConfig.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_ScanConfig.Location = new System.Drawing.Point(4, 22);
             this.tabPage_ScanConfig.Name = "tabPage_ScanConfig";
             this.tabPage_ScanConfig.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage_ScanConfig.Size = new System.Drawing.Size(393, 600);
+            this.tabPage_ScanConfig.Size = new System.Drawing.Size(389, 609);
             this.tabPage_ScanConfig.TabIndex = 1;
             this.tabPage_ScanConfig.Text = "Scan Config";
             this.tabPage_ScanConfig.UseVisualStyleBackColor = true;
@@ -1283,52 +1430,55 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_MoveCfgT2L
             // 
-            this.Button_MoveCfgT2L.Location = new System.Drawing.Point(173, 189);
+            this.Button_MoveCfgT2L.Location = new System.Drawing.Point(170, 228);
             this.Button_MoveCfgT2L.Name = "Button_MoveCfgT2L";
-            this.Button_MoveCfgT2L.Size = new System.Drawing.Size(44, 37);
+            this.Button_MoveCfgT2L.Size = new System.Drawing.Size(50, 35);
             this.Button_MoveCfgT2L.TabIndex = 45;
-            this.Button_MoveCfgT2L.Text = "Move <<";
+            this.Button_MoveCfgT2L.Text = "Move";
+            this.toolTip1.SetToolTip(this.Button_MoveCfgT2L, "Move config from device to local");
             this.Button_MoveCfgT2L.UseVisualStyleBackColor = true;
             this.Button_MoveCfgT2L.Click += new System.EventHandler(this.Button_MoveCfgT2L_Click);
             // 
             // Button_MoveCfgL2T
             // 
-            this.Button_MoveCfgL2T.Location = new System.Drawing.Point(173, 145);
+            this.Button_MoveCfgL2T.Location = new System.Drawing.Point(170, 175);
             this.Button_MoveCfgL2T.Name = "Button_MoveCfgL2T";
-            this.Button_MoveCfgL2T.Size = new System.Drawing.Size(44, 38);
+            this.Button_MoveCfgL2T.Size = new System.Drawing.Size(50, 35);
             this.Button_MoveCfgL2T.TabIndex = 44;
-            this.Button_MoveCfgL2T.Text = "Move>>";
+            this.Button_MoveCfgL2T.Text = "Move";
+            this.toolTip1.SetToolTip(this.Button_MoveCfgL2T, "Move config from local to device");
             this.Button_MoveCfgL2T.UseVisualStyleBackColor = true;
             this.Button_MoveCfgL2T.Click += new System.EventHandler(this.Button_MoveCfgL2T_Click);
             // 
             // Button_CopyCfgT2L
             // 
-            this.Button_CopyCfgT2L.Location = new System.Drawing.Point(173, 101);
+            this.Button_CopyCfgT2L.Location = new System.Drawing.Point(170, 122);
             this.Button_CopyCfgT2L.Name = "Button_CopyCfgT2L";
-            this.Button_CopyCfgT2L.Size = new System.Drawing.Size(44, 38);
+            this.Button_CopyCfgT2L.Size = new System.Drawing.Size(50, 35);
             this.Button_CopyCfgT2L.TabIndex = 43;
-            this.Button_CopyCfgT2L.Text = "Copy<<";
+            this.Button_CopyCfgT2L.Text = "Copy";
+            this.toolTip1.SetToolTip(this.Button_CopyCfgT2L, "Copy config from device to local");
             this.Button_CopyCfgT2L.UseVisualStyleBackColor = true;
             this.Button_CopyCfgT2L.Click += new System.EventHandler(this.Button_CopyCfgT2L_Click);
             // 
             // Button_CopyCfgL2T
             // 
-            this.Button_CopyCfgL2T.Location = new System.Drawing.Point(173, 55);
+            this.Button_CopyCfgL2T.Location = new System.Drawing.Point(170, 69);
             this.Button_CopyCfgL2T.Name = "Button_CopyCfgL2T";
-            this.Button_CopyCfgL2T.Size = new System.Drawing.Size(44, 40);
+            this.Button_CopyCfgL2T.Size = new System.Drawing.Size(50, 35);
             this.Button_CopyCfgL2T.TabIndex = 42;
-            this.Button_CopyCfgL2T.Text = "Copy>>";
+            this.Button_CopyCfgL2T.Text = "Copy";
+            this.toolTip1.SetToolTip(this.Button_CopyCfgL2T, "Copy config from local to device");
             this.Button_CopyCfgL2T.UseVisualStyleBackColor = true;
             this.Button_CopyCfgL2T.Click += new System.EventHandler(this.Button_CopyCfgL2T_Click);
             // 
             // ListBox_LocalCfgs
             // 
             this.ListBox_LocalCfgs.FormattingEnabled = true;
-            this.ListBox_LocalCfgs.ItemHeight = 14;
             this.ListBox_LocalCfgs.Location = new System.Drawing.Point(6, 54);
             this.ListBox_LocalCfgs.Name = "ListBox_LocalCfgs";
             this.ListBox_LocalCfgs.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.ListBox_LocalCfgs.Size = new System.Drawing.Size(161, 158);
+            this.ListBox_LocalCfgs.Size = new System.Drawing.Size(161, 212);
             this.ListBox_LocalCfgs.TabIndex = 40;
             this.toolTip1.SetToolTip(this.ListBox_LocalCfgs, "Local Config List");
             this.ListBox_LocalCfgs.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ListBox_LocalCfgs_MouseClick);
@@ -1338,31 +1488,31 @@ namespace ISC_Win_WinForm_GUI
             // label_ActiveConfig
             // 
             this.label_ActiveConfig.AutoSize = true;
-            this.label_ActiveConfig.Font = new System.Drawing.Font("Calibri", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label_ActiveConfig.ForeColor = System.Drawing.SystemColors.MenuHighlight;
             this.label_ActiveConfig.Location = new System.Drawing.Point(224, 21);
             this.label_ActiveConfig.Name = "label_ActiveConfig";
-            this.label_ActiveConfig.Size = new System.Drawing.Size(53, 14);
+            this.label_ActiveConfig.Size = new System.Drawing.Size(51, 13);
             this.label_ActiveConfig.TabIndex = 10;
             this.label_ActiveConfig.Text = "Column 1";
             this.label_ActiveConfig.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toolTip1.SetToolTip(this.label_ActiveConfig, "Config that actively applied at device boot-up");
             // 
             // ListBox_TargetCfgs
             // 
             this.ListBox_TargetCfgs.FormattingEnabled = true;
-            this.ListBox_TargetCfgs.ItemHeight = 14;
             this.ListBox_TargetCfgs.Location = new System.Drawing.Point(223, 54);
             this.ListBox_TargetCfgs.Name = "ListBox_TargetCfgs";
             this.ListBox_TargetCfgs.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.ListBox_TargetCfgs.Size = new System.Drawing.Size(161, 158);
+            this.ListBox_TargetCfgs.Size = new System.Drawing.Size(161, 212);
             this.ListBox_TargetCfgs.TabIndex = 41;
             this.toolTip1.SetToolTip(this.ListBox_TargetCfgs, "Device Config List");
+            this.ListBox_TargetCfgs.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ListBox_TargetCfgs_MouseClick);
             this.ListBox_TargetCfgs.SelectedIndexChanged += new System.EventHandler(this.ListBox_TargetCfgs_SelectedIndexChanged);
             this.ListBox_TargetCfgs.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.ListBox_TargetCfgs_MouseDoubleClick);
             // 
             // Button_SetActive
             // 
-            this.Button_SetActive.Location = new System.Drawing.Point(223, 232);
+            this.Button_SetActive.Location = new System.Drawing.Point(223, 277);
             this.Button_SetActive.Name = "Button_SetActive";
             this.Button_SetActive.Size = new System.Drawing.Size(161, 23);
             this.Button_SetActive.TabIndex = 6;
@@ -1373,18 +1523,18 @@ namespace ISC_Win_WinForm_GUI
             // label94
             // 
             this.label94.AutoSize = true;
-            this.label94.Font = new System.Drawing.Font("Calibri", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label94.ForeColor = System.Drawing.SystemColors.HotTrack;
             this.label94.Location = new System.Drawing.Point(224, 7);
             this.label94.Name = "label94";
-            this.label94.Size = new System.Drawing.Size(159, 14);
+            this.label94.Size = new System.Drawing.Size(148, 13);
             this.label94.TabIndex = 7;
             this.label94.Text = "Device Default Configuration : ";
             this.label94.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toolTip1.SetToolTip(this.label94, "Config that actively applied at device boot-up");
             // 
             // Button_CfgCancel
             // 
-            this.Button_CfgCancel.Location = new System.Drawing.Point(314, 544);
+            this.Button_CfgCancel.Location = new System.Drawing.Point(314, 560);
             this.Button_CfgCancel.Name = "Button_CfgCancel";
             this.Button_CfgCancel.Size = new System.Drawing.Size(70, 25);
             this.Button_CfgCancel.TabIndex = 4;
@@ -1394,7 +1544,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_CfgSave
             // 
-            this.Button_CfgSave.Location = new System.Drawing.Point(236, 544);
+            this.Button_CfgSave.Location = new System.Drawing.Point(237, 560);
             this.Button_CfgSave.Name = "Button_CfgSave";
             this.Button_CfgSave.Size = new System.Drawing.Size(70, 25);
             this.Button_CfgSave.TabIndex = 3;
@@ -1404,7 +1554,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_CfgDelete
             // 
-            this.Button_CfgDelete.Location = new System.Drawing.Point(159, 544);
+            this.Button_CfgDelete.Location = new System.Drawing.Point(160, 560);
             this.Button_CfgDelete.Name = "Button_CfgDelete";
             this.Button_CfgDelete.Size = new System.Drawing.Size(70, 25);
             this.Button_CfgDelete.TabIndex = 2;
@@ -1414,7 +1564,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_CfgEdit
             // 
-            this.Button_CfgEdit.Location = new System.Drawing.Point(82, 544);
+            this.Button_CfgEdit.Location = new System.Drawing.Point(83, 560);
             this.Button_CfgEdit.Name = "Button_CfgEdit";
             this.Button_CfgEdit.Size = new System.Drawing.Size(70, 25);
             this.Button_CfgEdit.TabIndex = 1;
@@ -1424,7 +1574,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_CfgNew
             // 
-            this.Button_CfgNew.Location = new System.Drawing.Point(6, 544);
+            this.Button_CfgNew.Location = new System.Drawing.Point(6, 560);
             this.Button_CfgNew.Name = "Button_CfgNew";
             this.Button_CfgNew.Size = new System.Drawing.Size(70, 25);
             this.Button_CfgNew.TabIndex = 0;
@@ -1434,21 +1584,13 @@ namespace ISC_Win_WinForm_GUI
             // 
             // GroupBox_CfgDetails
             // 
-            this.GroupBox_CfgDetails.Controls.Add(this.label_totalPatterns);
-            this.GroupBox_CfgDetails.Controls.Add(this.label7);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_maxPattern5);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_maxPattern4);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_maxPattern3);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_maxPattern2);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_maxPattern1);
+            this.GroupBox_CfgDetails.Controls.Add(this.label_overSampleRate5);
+            this.GroupBox_CfgDetails.Controls.Add(this.label_overSampleRate4);
+            this.GroupBox_CfgDetails.Controls.Add(this.label_overSampleRate3);
+            this.GroupBox_CfgDetails.Controls.Add(this.label_overSampleRate2);
+            this.GroupBox_CfgDetails.Controls.Add(this.label_overSampleRate1);
             this.GroupBox_CfgDetails.Controls.Add(this.label14);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_pattern5);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_pattern4);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_pattern3);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_pattern2);
-            this.GroupBox_CfgDetails.Controls.Add(this.label_pattern1);
             this.GroupBox_CfgDetails.Controls.Add(this.comboBox_cfgNumSec);
-            this.GroupBox_CfgDetails.Controls.Add(this.Label_CfgNumPatterns);
             this.GroupBox_CfgDetails.Controls.Add(this.label93);
             this.GroupBox_CfgDetails.Controls.Add(this.label92);
             this.GroupBox_CfgDetails.Controls.Add(this.label91);
@@ -1495,150 +1637,67 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_CfgDetails.Controls.Add(this.label81);
             this.GroupBox_CfgDetails.Controls.Add(this.TextBox_CfgName);
             this.GroupBox_CfgDetails.Controls.Add(this.label80);
-            this.GroupBox_CfgDetails.Location = new System.Drawing.Point(6, 261);
+            this.GroupBox_CfgDetails.Location = new System.Drawing.Point(6, 308);
             this.GroupBox_CfgDetails.Name = "GroupBox_CfgDetails";
-            this.GroupBox_CfgDetails.Size = new System.Drawing.Size(381, 269);
+            this.GroupBox_CfgDetails.Size = new System.Drawing.Size(381, 235);
             this.GroupBox_CfgDetails.TabIndex = 0;
             this.GroupBox_CfgDetails.TabStop = false;
             this.GroupBox_CfgDetails.Text = "Details";
             // 
-            // label_totalPatterns
+            // label_overSampleRate5
             // 
-            this.label_totalPatterns.BackColor = System.Drawing.Color.LightGray;
-            this.label_totalPatterns.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_totalPatterns.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_totalPatterns.Location = new System.Drawing.Point(132, 249);
-            this.label_totalPatterns.Name = "label_totalPatterns";
-            this.label_totalPatterns.Size = new System.Drawing.Size(48, 16);
-            this.label_totalPatterns.TabIndex = 66;
-            this.label_totalPatterns.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label_overSampleRate5.Location = new System.Drawing.Point(329, 213);
+            this.label_overSampleRate5.Name = "label_overSampleRate5";
+            this.label_overSampleRate5.Size = new System.Drawing.Size(42, 14);
+            this.label_overSampleRate5.TabIndex = 64;
+            this.label_overSampleRate5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // label7
+            // label_overSampleRate4
             // 
-            this.label7.BackColor = System.Drawing.Color.LightGray;
-            this.label7.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label7.Location = new System.Drawing.Point(24, 249);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(101, 16);
-            this.label7.TabIndex = 65;
-            this.label7.Text = "Total Pattern Used";
-            this.toolTip1.SetToolTip(this.label7, "Total DMD patterns used with all configuration sections, the maximum value is 624" +
-        ".");
+            this.label_overSampleRate4.Location = new System.Drawing.Point(281, 213);
+            this.label_overSampleRate4.Name = "label_overSampleRate4";
+            this.label_overSampleRate4.Size = new System.Drawing.Size(42, 14);
+            this.label_overSampleRate4.TabIndex = 63;
+            this.label_overSampleRate4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // label_maxPattern5
+            // label_overSampleRate3
             // 
-            this.label_maxPattern5.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_maxPattern5.Location = new System.Drawing.Point(331, 214);
-            this.label_maxPattern5.Name = "label_maxPattern5";
-            this.label_maxPattern5.Size = new System.Drawing.Size(42, 14);
-            this.label_maxPattern5.TabIndex = 64;
-            this.label_maxPattern5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label_overSampleRate3.Location = new System.Drawing.Point(232, 213);
+            this.label_overSampleRate3.Name = "label_overSampleRate3";
+            this.label_overSampleRate3.Size = new System.Drawing.Size(42, 14);
+            this.label_overSampleRate3.TabIndex = 62;
+            this.label_overSampleRate3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // label_maxPattern4
+            // label_overSampleRate2
             // 
-            this.label_maxPattern4.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_maxPattern4.Location = new System.Drawing.Point(283, 214);
-            this.label_maxPattern4.Name = "label_maxPattern4";
-            this.label_maxPattern4.Size = new System.Drawing.Size(42, 14);
-            this.label_maxPattern4.TabIndex = 63;
-            this.label_maxPattern4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label_overSampleRate2.Location = new System.Drawing.Point(182, 213);
+            this.label_overSampleRate2.Name = "label_overSampleRate2";
+            this.label_overSampleRate2.Size = new System.Drawing.Size(42, 14);
+            this.label_overSampleRate2.TabIndex = 61;
+            this.label_overSampleRate2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // label_maxPattern3
+            // label_overSampleRate1
             // 
-            this.label_maxPattern3.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_maxPattern3.Location = new System.Drawing.Point(234, 214);
-            this.label_maxPattern3.Name = "label_maxPattern3";
-            this.label_maxPattern3.Size = new System.Drawing.Size(42, 14);
-            this.label_maxPattern3.TabIndex = 62;
-            this.label_maxPattern3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_maxPattern2
-            // 
-            this.label_maxPattern2.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_maxPattern2.Location = new System.Drawing.Point(184, 214);
-            this.label_maxPattern2.Name = "label_maxPattern2";
-            this.label_maxPattern2.Size = new System.Drawing.Size(42, 14);
-            this.label_maxPattern2.TabIndex = 61;
-            this.label_maxPattern2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_maxPattern1
-            // 
-            this.label_maxPattern1.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_maxPattern1.Location = new System.Drawing.Point(136, 214);
-            this.label_maxPattern1.Name = "label_maxPattern1";
-            this.label_maxPattern1.Size = new System.Drawing.Size(42, 14);
-            this.label_maxPattern1.TabIndex = 60;
-            this.label_maxPattern1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label_overSampleRate1.Location = new System.Drawing.Point(134, 213);
+            this.label_overSampleRate1.Name = "label_overSampleRate1";
+            this.label_overSampleRate1.Size = new System.Drawing.Size(42, 14);
+            this.label_overSampleRate1.TabIndex = 60;
+            this.label_overSampleRate1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label14
             // 
-            this.label14.AutoSize = true;
-            this.label14.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label14.Location = new System.Drawing.Point(41, 213);
+            this.label14.ForeColor = System.Drawing.Color.Blue;
+            this.label14.Location = new System.Drawing.Point(8, 213);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(84, 14);
+            this.label14.Size = new System.Drawing.Size(118, 13);
             this.label14.TabIndex = 59;
-            this.label14.Text = "Max Resolution";
+            this.label14.Text = "Oversampling";
+            this.label14.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.toolTip1.SetToolTip(this.label14, "The maximum resolution is limited by 3x pattern overlap.");
-            // 
-            // label_pattern5
-            // 
-            this.label_pattern5.BackColor = System.Drawing.Color.LightGray;
-            this.label_pattern5.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_pattern5.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_pattern5.Location = new System.Drawing.Point(328, 231);
-            this.label_pattern5.Name = "label_pattern5";
-            this.label_pattern5.Size = new System.Drawing.Size(48, 16);
-            this.label_pattern5.TabIndex = 58;
-            this.label_pattern5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_pattern4
-            // 
-            this.label_pattern4.BackColor = System.Drawing.Color.LightGray;
-            this.label_pattern4.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_pattern4.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_pattern4.Location = new System.Drawing.Point(279, 231);
-            this.label_pattern4.Name = "label_pattern4";
-            this.label_pattern4.Size = new System.Drawing.Size(48, 16);
-            this.label_pattern4.TabIndex = 57;
-            this.label_pattern4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_pattern3
-            // 
-            this.label_pattern3.BackColor = System.Drawing.Color.LightGray;
-            this.label_pattern3.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_pattern3.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_pattern3.Location = new System.Drawing.Point(230, 231);
-            this.label_pattern3.Name = "label_pattern3";
-            this.label_pattern3.Size = new System.Drawing.Size(48, 16);
-            this.label_pattern3.TabIndex = 56;
-            this.label_pattern3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_pattern2
-            // 
-            this.label_pattern2.BackColor = System.Drawing.Color.LightGray;
-            this.label_pattern2.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_pattern2.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_pattern2.Location = new System.Drawing.Point(181, 231);
-            this.label_pattern2.Name = "label_pattern2";
-            this.label_pattern2.Size = new System.Drawing.Size(48, 16);
-            this.label_pattern2.TabIndex = 55;
-            this.label_pattern2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label_pattern1
-            // 
-            this.label_pattern1.BackColor = System.Drawing.Color.LightGray;
-            this.label_pattern1.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label_pattern1.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.label_pattern1.Location = new System.Drawing.Point(132, 231);
-            this.label_pattern1.Name = "label_pattern1";
-            this.label_pattern1.Size = new System.Drawing.Size(48, 16);
-            this.label_pattern1.TabIndex = 54;
-            this.label_pattern1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // comboBox_cfgNumSec
             // 
+            this.comboBox_cfgNumSec.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.comboBox_cfgNumSec.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox_cfgNumSec.FormattingEnabled = true;
             this.comboBox_cfgNumSec.Items.AddRange(new object[] {
@@ -1655,77 +1714,65 @@ namespace ISC_Win_WinForm_GUI
             this.comboBox_cfgNumSec.Enter += new System.EventHandler(this.CfgField_Enter);
             this.comboBox_cfgNumSec.Leave += new System.EventHandler(this.CfgField_LostFocus);
             // 
-            // Label_CfgNumPatterns
-            // 
-            this.Label_CfgNumPatterns.BackColor = System.Drawing.Color.LightGray;
-            this.Label_CfgNumPatterns.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Label_CfgNumPatterns.ForeColor = System.Drawing.Color.MidnightBlue;
-            this.Label_CfgNumPatterns.Location = new System.Drawing.Point(52, 231);
-            this.Label_CfgNumPatterns.Name = "Label_CfgNumPatterns";
-            this.Label_CfgNumPatterns.Size = new System.Drawing.Size(73, 16);
-            this.Label_CfgNumPatterns.TabIndex = 52;
-            this.Label_CfgNumPatterns.Text = "Pattern Used";
-            this.toolTip1.SetToolTip(this.Label_CfgNumPatterns, "DMD pattern number used by configuration.");
-            // 
             // label93
             // 
-            this.label93.AutoSize = true;
-            this.label93.Location = new System.Drawing.Point(36, 190);
+            this.label93.Location = new System.Drawing.Point(8, 190);
             this.label93.Name = "label93";
-            this.label93.Size = new System.Drawing.Size(90, 14);
+            this.label93.Size = new System.Drawing.Size(118, 13);
             this.label93.TabIndex = 46;
-            this.label93.Text = "Dig. Resolution";
+            this.label93.Text = "Digital Resolution";
+            this.label93.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label92
             // 
-            this.label92.AutoSize = true;
-            this.label92.Location = new System.Drawing.Point(15, 168);
+            this.label92.Location = new System.Drawing.Point(8, 168);
             this.label92.Name = "label92";
-            this.label92.Size = new System.Drawing.Size(113, 14);
+            this.label92.Size = new System.Drawing.Size(118, 13);
             this.label92.TabIndex = 45;
             this.label92.Text = "Exposure Time (ms)";
+            this.label92.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label91
             // 
-            this.label91.AutoSize = true;
-            this.label91.Location = new System.Drawing.Point(60, 146);
+            this.label91.Location = new System.Drawing.Point(8, 146);
             this.label91.Name = "label91";
-            this.label91.Size = new System.Drawing.Size(68, 14);
+            this.label91.Size = new System.Drawing.Size(118, 13);
             this.label91.TabIndex = 44;
             this.label91.Text = "Width (nm)";
+            this.label91.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label90
             // 
-            this.label90.AutoSize = true;
-            this.label90.Location = new System.Drawing.Point(17, 124);
+            this.label90.Location = new System.Drawing.Point(8, 124);
             this.label90.Name = "label90";
-            this.label90.Size = new System.Drawing.Size(111, 14);
+            this.label90.Size = new System.Drawing.Size(118, 13);
             this.label90.TabIndex = 43;
             this.label90.Text = "Spectral Range End";
+            this.label90.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label89
             // 
-            this.label89.AutoSize = true;
-            this.label89.Location = new System.Drawing.Point(12, 102);
+            this.label89.Location = new System.Drawing.Point(8, 102);
             this.label89.Name = "label89";
-            this.label89.Size = new System.Drawing.Size(116, 14);
+            this.label89.Size = new System.Drawing.Size(118, 13);
             this.label89.TabIndex = 42;
             this.label89.Text = "Spectral Range Start";
+            this.label89.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label88
             // 
-            this.label88.AutoSize = true;
-            this.label88.Location = new System.Drawing.Point(69, 80);
+            this.label88.Location = new System.Drawing.Point(8, 80);
             this.label88.Name = "label88";
-            this.label88.Size = new System.Drawing.Size(59, 14);
+            this.label88.Size = new System.Drawing.Size(118, 13);
             this.label88.TabIndex = 41;
             this.label88.Text = "Scan Type";
+            this.label88.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // TextBox_CfgDigRes1
             // 
             this.TextBox_CfgDigRes1.Location = new System.Drawing.Point(131, 187);
             this.TextBox_CfgDigRes1.Name = "TextBox_CfgDigRes1";
-            this.TextBox_CfgDigRes1.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgDigRes1.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgDigRes1.TabIndex = 15;
             this.TextBox_CfgDigRes1.Text = "3";
             this.TextBox_CfgDigRes1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1738,7 +1785,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgDigRes2.Location = new System.Drawing.Point(180, 187);
             this.TextBox_CfgDigRes2.Name = "TextBox_CfgDigRes2";
-            this.TextBox_CfgDigRes2.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgDigRes2.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgDigRes2.TabIndex = 21;
             this.TextBox_CfgDigRes2.Text = "3";
             this.TextBox_CfgDigRes2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1751,7 +1798,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgDigRes3.Location = new System.Drawing.Point(229, 187);
             this.TextBox_CfgDigRes3.Name = "TextBox_CfgDigRes3";
-            this.TextBox_CfgDigRes3.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgDigRes3.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgDigRes3.TabIndex = 27;
             this.TextBox_CfgDigRes3.Text = "3";
             this.TextBox_CfgDigRes3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1764,7 +1811,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgDigRes4.Location = new System.Drawing.Point(278, 187);
             this.TextBox_CfgDigRes4.Name = "TextBox_CfgDigRes4";
-            this.TextBox_CfgDigRes4.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgDigRes4.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgDigRes4.TabIndex = 33;
             this.TextBox_CfgDigRes4.Text = "3";
             this.TextBox_CfgDigRes4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1777,7 +1824,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgDigRes5.Location = new System.Drawing.Point(327, 187);
             this.TextBox_CfgDigRes5.Name = "TextBox_CfgDigRes5";
-            this.TextBox_CfgDigRes5.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgDigRes5.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgDigRes5.TabIndex = 39;
             this.TextBox_CfgDigRes5.Text = "3";
             this.TextBox_CfgDigRes5.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1791,8 +1838,9 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgExposure1.FormattingEnabled = true;
             this.ComboBox_CfgExposure1.Location = new System.Drawing.Point(131, 165);
+            this.ComboBox_CfgExposure1.Margin = new System.Windows.Forms.Padding(0);
             this.ComboBox_CfgExposure1.Name = "ComboBox_CfgExposure1";
-            this.ComboBox_CfgExposure1.Size = new System.Drawing.Size(50, 22);
+            this.ComboBox_CfgExposure1.Size = new System.Drawing.Size(50, 21);
             this.ComboBox_CfgExposure1.TabIndex = 14;
             this.ComboBox_CfgExposure1.SelectedIndexChanged += new System.EventHandler(this.CfgDetails_Validated);
             this.ComboBox_CfgExposure1.Enter += new System.EventHandler(this.CfgField_Enter);
@@ -1804,7 +1852,7 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure2.FormattingEnabled = true;
             this.ComboBox_CfgExposure2.Location = new System.Drawing.Point(180, 165);
             this.ComboBox_CfgExposure2.Name = "ComboBox_CfgExposure2";
-            this.ComboBox_CfgExposure2.Size = new System.Drawing.Size(50, 22);
+            this.ComboBox_CfgExposure2.Size = new System.Drawing.Size(50, 21);
             this.ComboBox_CfgExposure2.TabIndex = 20;
             this.ComboBox_CfgExposure2.SelectedIndexChanged += new System.EventHandler(this.CfgDetails_Validated);
             this.ComboBox_CfgExposure2.Enter += new System.EventHandler(this.CfgField_Enter);
@@ -1816,7 +1864,7 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure3.FormattingEnabled = true;
             this.ComboBox_CfgExposure3.Location = new System.Drawing.Point(229, 165);
             this.ComboBox_CfgExposure3.Name = "ComboBox_CfgExposure3";
-            this.ComboBox_CfgExposure3.Size = new System.Drawing.Size(50, 22);
+            this.ComboBox_CfgExposure3.Size = new System.Drawing.Size(50, 21);
             this.ComboBox_CfgExposure3.TabIndex = 26;
             this.ComboBox_CfgExposure3.SelectedIndexChanged += new System.EventHandler(this.CfgDetails_Validated);
             this.ComboBox_CfgExposure3.Enter += new System.EventHandler(this.CfgField_Enter);
@@ -1828,7 +1876,7 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure4.FormattingEnabled = true;
             this.ComboBox_CfgExposure4.Location = new System.Drawing.Point(278, 165);
             this.ComboBox_CfgExposure4.Name = "ComboBox_CfgExposure4";
-            this.ComboBox_CfgExposure4.Size = new System.Drawing.Size(50, 22);
+            this.ComboBox_CfgExposure4.Size = new System.Drawing.Size(50, 21);
             this.ComboBox_CfgExposure4.TabIndex = 32;
             this.ComboBox_CfgExposure4.SelectedIndexChanged += new System.EventHandler(this.CfgDetails_Validated);
             this.ComboBox_CfgExposure4.Enter += new System.EventHandler(this.CfgField_Enter);
@@ -1840,7 +1888,7 @@ namespace ISC_Win_WinForm_GUI
             this.ComboBox_CfgExposure5.FormattingEnabled = true;
             this.ComboBox_CfgExposure5.Location = new System.Drawing.Point(327, 165);
             this.ComboBox_CfgExposure5.Name = "ComboBox_CfgExposure5";
-            this.ComboBox_CfgExposure5.Size = new System.Drawing.Size(50, 22);
+            this.ComboBox_CfgExposure5.Size = new System.Drawing.Size(50, 21);
             this.ComboBox_CfgExposure5.TabIndex = 38;
             this.ComboBox_CfgExposure5.SelectedIndexChanged += new System.EventHandler(this.CfgDetails_Validated);
             this.ComboBox_CfgExposure5.Enter += new System.EventHandler(this.CfgField_Enter);
@@ -1848,6 +1896,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgWidth1
             // 
+            this.ComboBox_CfgWidth1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgWidth1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgWidth1.FormattingEnabled = true;
             this.ComboBox_CfgWidth1.Location = new System.Drawing.Point(131, 143);
@@ -1860,6 +1909,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgWidth2
             // 
+            this.ComboBox_CfgWidth2.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgWidth2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgWidth2.FormattingEnabled = true;
             this.ComboBox_CfgWidth2.Location = new System.Drawing.Point(180, 143);
@@ -1872,6 +1922,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgWidth3
             // 
+            this.ComboBox_CfgWidth3.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgWidth3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgWidth3.FormattingEnabled = true;
             this.ComboBox_CfgWidth3.Location = new System.Drawing.Point(229, 143);
@@ -1884,6 +1935,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgWidth4
             // 
+            this.ComboBox_CfgWidth4.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgWidth4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgWidth4.FormattingEnabled = true;
             this.ComboBox_CfgWidth4.Location = new System.Drawing.Point(278, 143);
@@ -1896,6 +1948,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgWidth5
             // 
+            this.ComboBox_CfgWidth5.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgWidth5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgWidth5.FormattingEnabled = true;
             this.ComboBox_CfgWidth5.Location = new System.Drawing.Point(327, 143);
@@ -1910,7 +1963,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeEnd1.Location = new System.Drawing.Point(131, 121);
             this.TextBox_CfgRangeEnd1.Name = "TextBox_CfgRangeEnd1";
-            this.TextBox_CfgRangeEnd1.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeEnd1.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeEnd1.TabIndex = 12;
             this.TextBox_CfgRangeEnd1.Text = "1700";
             this.TextBox_CfgRangeEnd1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1923,7 +1976,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeEnd2.Location = new System.Drawing.Point(180, 121);
             this.TextBox_CfgRangeEnd2.Name = "TextBox_CfgRangeEnd2";
-            this.TextBox_CfgRangeEnd2.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeEnd2.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeEnd2.TabIndex = 18;
             this.TextBox_CfgRangeEnd2.Text = "1700";
             this.TextBox_CfgRangeEnd2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1936,7 +1989,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeEnd3.Location = new System.Drawing.Point(229, 121);
             this.TextBox_CfgRangeEnd3.Name = "TextBox_CfgRangeEnd3";
-            this.TextBox_CfgRangeEnd3.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeEnd3.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeEnd3.TabIndex = 24;
             this.TextBox_CfgRangeEnd3.Text = "1700";
             this.TextBox_CfgRangeEnd3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1949,7 +2002,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeEnd4.Location = new System.Drawing.Point(278, 121);
             this.TextBox_CfgRangeEnd4.Name = "TextBox_CfgRangeEnd4";
-            this.TextBox_CfgRangeEnd4.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeEnd4.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeEnd4.TabIndex = 30;
             this.TextBox_CfgRangeEnd4.Text = "1700";
             this.TextBox_CfgRangeEnd4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1962,7 +2015,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeEnd5.Location = new System.Drawing.Point(327, 121);
             this.TextBox_CfgRangeEnd5.Name = "TextBox_CfgRangeEnd5";
-            this.TextBox_CfgRangeEnd5.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeEnd5.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeEnd5.TabIndex = 36;
             this.TextBox_CfgRangeEnd5.Text = "1700";
             this.TextBox_CfgRangeEnd5.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1975,7 +2028,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeStart1.Location = new System.Drawing.Point(131, 99);
             this.TextBox_CfgRangeStart1.Name = "TextBox_CfgRangeStart1";
-            this.TextBox_CfgRangeStart1.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeStart1.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeStart1.TabIndex = 11;
             this.TextBox_CfgRangeStart1.Text = "900";
             this.TextBox_CfgRangeStart1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -1988,7 +2041,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeStart2.Location = new System.Drawing.Point(180, 99);
             this.TextBox_CfgRangeStart2.Name = "TextBox_CfgRangeStart2";
-            this.TextBox_CfgRangeStart2.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeStart2.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeStart2.TabIndex = 17;
             this.TextBox_CfgRangeStart2.Text = "900";
             this.TextBox_CfgRangeStart2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -2001,7 +2054,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeStart3.Location = new System.Drawing.Point(229, 99);
             this.TextBox_CfgRangeStart3.Name = "TextBox_CfgRangeStart3";
-            this.TextBox_CfgRangeStart3.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeStart3.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeStart3.TabIndex = 23;
             this.TextBox_CfgRangeStart3.Text = "900";
             this.TextBox_CfgRangeStart3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -2014,7 +2067,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeStart4.Location = new System.Drawing.Point(278, 99);
             this.TextBox_CfgRangeStart4.Name = "TextBox_CfgRangeStart4";
-            this.TextBox_CfgRangeStart4.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeStart4.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeStart4.TabIndex = 29;
             this.TextBox_CfgRangeStart4.Text = "900";
             this.TextBox_CfgRangeStart4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -2025,6 +2078,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgScanType1
             // 
+            this.ComboBox_CfgScanType1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgScanType1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgScanType1.FormattingEnabled = true;
             this.ComboBox_CfgScanType1.Location = new System.Drawing.Point(131, 77);
@@ -2037,6 +2091,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgScanType2
             // 
+            this.ComboBox_CfgScanType2.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgScanType2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgScanType2.FormattingEnabled = true;
             this.ComboBox_CfgScanType2.Location = new System.Drawing.Point(180, 77);
@@ -2049,6 +2104,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgScanType3
             // 
+            this.ComboBox_CfgScanType3.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgScanType3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgScanType3.FormattingEnabled = true;
             this.ComboBox_CfgScanType3.Location = new System.Drawing.Point(229, 77);
@@ -2061,6 +2117,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgScanType4
             // 
+            this.ComboBox_CfgScanType4.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgScanType4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgScanType4.FormattingEnabled = true;
             this.ComboBox_CfgScanType4.Location = new System.Drawing.Point(278, 77);
@@ -2075,7 +2132,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgRangeStart5.Location = new System.Drawing.Point(327, 99);
             this.TextBox_CfgRangeStart5.Name = "TextBox_CfgRangeStart5";
-            this.TextBox_CfgRangeStart5.Size = new System.Drawing.Size(50, 22);
+            this.TextBox_CfgRangeStart5.Size = new System.Drawing.Size(50, 21);
             this.TextBox_CfgRangeStart5.TabIndex = 35;
             this.TextBox_CfgRangeStart5.Text = "900";
             this.TextBox_CfgRangeStart5.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -2086,6 +2143,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // ComboBox_CfgScanType5
             // 
+            this.ComboBox_CfgScanType5.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.ComboBox_CfgScanType5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ComboBox_CfgScanType5.FormattingEnabled = true;
             this.ComboBox_CfgScanType5.Location = new System.Drawing.Point(327, 77);
@@ -2101,7 +2159,7 @@ namespace ISC_Win_WinForm_GUI
             this.label87.AutoSize = true;
             this.label87.Location = new System.Drawing.Point(6, 52);
             this.label87.Name = "label87";
-            this.label87.Size = new System.Drawing.Size(80, 14);
+            this.label87.Size = new System.Drawing.Size(70, 13);
             this.label87.TabIndex = 9;
             this.label87.Text = "Num Sections";
             // 
@@ -2154,7 +2212,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgAvg.Location = new System.Drawing.Point(327, 15);
             this.TextBox_CfgAvg.Name = "TextBox_CfgAvg";
-            this.TextBox_CfgAvg.Size = new System.Drawing.Size(48, 22);
+            this.TextBox_CfgAvg.Size = new System.Drawing.Size(48, 21);
             this.TextBox_CfgAvg.TabIndex = 8;
             this.TextBox_CfgAvg.Text = "6";
             this.TextBox_CfgAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -2167,7 +2225,7 @@ namespace ISC_Win_WinForm_GUI
             this.label81.AutoSize = true;
             this.label81.Location = new System.Drawing.Point(222, 18);
             this.label81.Name = "label81";
-            this.label81.Size = new System.Drawing.Size(104, 14);
+            this.label81.Size = new System.Drawing.Size(91, 13);
             this.label81.TabIndex = 2;
             this.label81.Text = "Num Scans to Avg.";
             // 
@@ -2175,7 +2233,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_CfgName.Location = new System.Drawing.Point(51, 15);
             this.TextBox_CfgName.Name = "TextBox_CfgName";
-            this.TextBox_CfgName.Size = new System.Drawing.Size(129, 22);
+            this.TextBox_CfgName.Size = new System.Drawing.Size(129, 21);
             this.TextBox_CfgName.TabIndex = 7;
             this.TextBox_CfgName.Text = "Config1";
             this.TextBox_CfgName.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
@@ -2189,22 +2247,24 @@ namespace ISC_Win_WinForm_GUI
             this.label80.AutoSize = true;
             this.label80.Location = new System.Drawing.Point(6, 18);
             this.label80.Name = "label80";
-            this.label80.Size = new System.Drawing.Size(39, 14);
+            this.label80.Size = new System.Drawing.Size(35, 13);
             this.label80.TabIndex = 0;
             this.label80.Text = "Name";
             // 
             // tabPage_SaveScans
             // 
             this.tabPage_SaveScans.Controls.Add(this.panel_Saved_Scan);
-            this.tabPage_SaveScans.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_SaveScans.Location = new System.Drawing.Point(4, 22);
             this.tabPage_SaveScans.Name = "tabPage_SaveScans";
-            this.tabPage_SaveScans.Size = new System.Drawing.Size(393, 600);
+            this.tabPage_SaveScans.Size = new System.Drawing.Size(389, 609);
             this.tabPage_SaveScans.TabIndex = 2;
             this.tabPage_SaveScans.Text = "Saved Scans";
             this.tabPage_SaveScans.UseVisualStyleBackColor = true;
             // 
             // panel_Saved_Scan
             // 
+            this.panel_Saved_Scan.Controls.Add(this.label2);
+            this.panel_Saved_Scan.Controls.Add(this.btn_FileListRefresh);
             this.panel_Saved_Scan.Controls.Add(this.RadioButton_SavedScanSelDat);
             this.panel_Saved_Scan.Controls.Add(this.RadioButton_SavedScanSelCsv);
             this.panel_Saved_Scan.Controls.Add(this.totalScan);
@@ -2266,12 +2326,31 @@ namespace ISC_Win_WinForm_GUI
             this.panel_Saved_Scan.Size = new System.Drawing.Size(392, 584);
             this.panel_Saved_Scan.TabIndex = 0;
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(3, 20);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(42, 13);
+            this.label2.TabIndex = 113;
+            this.label2.Text = "Folder :";
+            // 
+            // btn_FileListRefresh
+            // 
+            this.btn_FileListRefresh.Location = new System.Drawing.Point(337, 16);
+            this.btn_FileListRefresh.Name = "btn_FileListRefresh";
+            this.btn_FileListRefresh.Size = new System.Drawing.Size(52, 23);
+            this.btn_FileListRefresh.TabIndex = 112;
+            this.btn_FileListRefresh.Text = "Refresh";
+            this.btn_FileListRefresh.UseVisualStyleBackColor = true;
+            this.btn_FileListRefresh.Click += new System.EventHandler(this.btn_FileListRefresh_Click);
+            // 
             // RadioButton_SavedScanSelDat
             // 
             this.RadioButton_SavedScanSelDat.AutoSize = true;
             this.RadioButton_SavedScanSelDat.Location = new System.Drawing.Point(59, 356);
             this.RadioButton_SavedScanSelDat.Name = "RadioButton_SavedScanSelDat";
-            this.RadioButton_SavedScanSelDat.Size = new System.Drawing.Size(52, 18);
+            this.RadioButton_SavedScanSelDat.Size = new System.Drawing.Size(49, 17);
             this.RadioButton_SavedScanSelDat.TabIndex = 111;
             this.RadioButton_SavedScanSelDat.TabStop = true;
             this.RadioButton_SavedScanSelDat.Text = "*.dat";
@@ -2283,7 +2362,7 @@ namespace ISC_Win_WinForm_GUI
             this.RadioButton_SavedScanSelCsv.AutoSize = true;
             this.RadioButton_SavedScanSelCsv.Location = new System.Drawing.Point(3, 356);
             this.RadioButton_SavedScanSelCsv.Name = "RadioButton_SavedScanSelCsv";
-            this.RadioButton_SavedScanSelCsv.Size = new System.Drawing.Size(50, 18);
+            this.RadioButton_SavedScanSelCsv.Size = new System.Drawing.Size(48, 17);
             this.RadioButton_SavedScanSelCsv.TabIndex = 110;
             this.RadioButton_SavedScanSelCsv.TabStop = true;
             this.RadioButton_SavedScanSelCsv.Text = "*.csv";
@@ -2301,9 +2380,9 @@ namespace ISC_Win_WinForm_GUI
             // 
             // button_clear
             // 
-            this.button_clear.Location = new System.Drawing.Point(314, 43);
+            this.button_clear.Location = new System.Drawing.Point(279, 43);
             this.button_clear.Name = "button_clear";
-            this.button_clear.Size = new System.Drawing.Size(75, 23);
+            this.button_clear.Size = new System.Drawing.Size(52, 23);
             this.button_clear.TabIndex = 5;
             this.button_clear.Text = "Clear";
             this.button_clear.UseVisualStyleBackColor = true;
@@ -2313,16 +2392,16 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.textBox_filter.Location = new System.Drawing.Point(48, 44);
             this.textBox_filter.Name = "textBox_filter";
-            this.textBox_filter.Size = new System.Drawing.Size(260, 22);
+            this.textBox_filter.Size = new System.Drawing.Size(225, 21);
             this.textBox_filter.TabIndex = 3;
             this.textBox_filter.TextChanged += new System.EventHandler(this.textBox_filter_TextChanged);
             // 
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(0, 47);
+            this.label13.Location = new System.Drawing.Point(3, 49);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(45, 14);
+            this.label13.Size = new System.Drawing.Size(39, 13);
             this.label13.TabIndex = 104;
             this.label13.Text = "Filter : ";
             // 
@@ -2334,6 +2413,7 @@ namespace ISC_Win_WinForm_GUI
             this.dataGridView_savescan.ColumnHeadersHeight = 29;
             this.dataGridView_savescan.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dataGridView_savescan.Location = new System.Drawing.Point(3, 72);
+            this.dataGridView_savescan.MultiSelect = false;
             this.dataGridView_savescan.Name = "dataGridView_savescan";
             this.dataGridView_savescan.ReadOnly = true;
             this.dataGridView_savescan.RowHeadersWidth = 25;
@@ -2343,7 +2423,7 @@ namespace ISC_Win_WinForm_GUI
             this.dataGridView_savescan.Size = new System.Drawing.Size(386, 278);
             this.dataGridView_savescan.TabIndex = 6;
             this.dataGridView_savescan.VirtualMode = true;
-            this.dataGridView_savescan.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView_savescan_CellContentClick);
+            this.dataGridView_savescan.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridView_savescan_ColumnHeaderMouseClick);
             this.dataGridView_savescan.KeyDown += new System.Windows.Forms.KeyEventHandler(this.dataGridView_savescan_KeyDown);
             this.dataGridView_savescan.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dataGridView_savescan_MouseClick);
             // 
@@ -2410,7 +2490,7 @@ namespace ISC_Win_WinForm_GUI
             this.label73.AutoSize = true;
             this.label73.Location = new System.Drawing.Point(6, 530);
             this.label73.Name = "label73";
-            this.label73.Size = new System.Drawing.Size(113, 14);
+            this.label73.Size = new System.Drawing.Size(97, 13);
             this.label73.TabIndex = 93;
             this.label73.Text = "Exposure Time (ms)";
             // 
@@ -2459,7 +2539,7 @@ namespace ISC_Win_WinForm_GUI
             this.label67.AutoSize = true;
             this.label67.Location = new System.Drawing.Point(6, 506);
             this.label67.Name = "label67";
-            this.label67.Size = new System.Drawing.Size(106, 14);
+            this.label67.Size = new System.Drawing.Size(90, 13);
             this.label67.TabIndex = 87;
             this.label67.Text = "Digital Resolution";
             // 
@@ -2508,7 +2588,7 @@ namespace ISC_Win_WinForm_GUI
             this.label61.AutoSize = true;
             this.label61.Location = new System.Drawing.Point(6, 482);
             this.label61.Name = "label61";
-            this.label61.Size = new System.Drawing.Size(68, 14);
+            this.label61.Size = new System.Drawing.Size(59, 13);
             this.label61.TabIndex = 81;
             this.label61.Text = "Width (nm)";
             // 
@@ -2557,7 +2637,7 @@ namespace ISC_Win_WinForm_GUI
             this.label55.AutoSize = true;
             this.label55.Location = new System.Drawing.Point(6, 458);
             this.label55.Name = "label55";
-            this.label55.Size = new System.Drawing.Size(111, 14);
+            this.label55.Size = new System.Drawing.Size(96, 13);
             this.label55.TabIndex = 75;
             this.label55.Text = "Spectral Range End";
             // 
@@ -2606,7 +2686,7 @@ namespace ISC_Win_WinForm_GUI
             this.label49.AutoSize = true;
             this.label49.Location = new System.Drawing.Point(6, 434);
             this.label49.Name = "label49";
-            this.label49.Size = new System.Drawing.Size(116, 14);
+            this.label49.Size = new System.Drawing.Size(102, 13);
             this.label49.TabIndex = 69;
             this.label49.Text = "Spectral Range Start";
             // 
@@ -2655,7 +2735,7 @@ namespace ISC_Win_WinForm_GUI
             this.label43.AutoSize = true;
             this.label43.Location = new System.Drawing.Point(6, 410);
             this.label43.Name = "label43";
-            this.label43.Size = new System.Drawing.Size(59, 14);
+            this.label43.Size = new System.Drawing.Size(53, 13);
             this.label43.TabIndex = 63;
             this.label43.Text = "Scan Type";
             // 
@@ -2728,20 +2808,20 @@ namespace ISC_Win_WinForm_GUI
             // 
             // Button_DisplayDirChange
             // 
-            this.Button_DisplayDirChange.Location = new System.Drawing.Point(314, 16);
+            this.Button_DisplayDirChange.Location = new System.Drawing.Point(278, 17);
             this.Button_DisplayDirChange.Name = "Button_DisplayDirChange";
-            this.Button_DisplayDirChange.Size = new System.Drawing.Size(75, 23);
+            this.Button_DisplayDirChange.Size = new System.Drawing.Size(53, 23);
             this.Button_DisplayDirChange.TabIndex = 2;
-            this.Button_DisplayDirChange.Text = "Directory";
+            this.Button_DisplayDirChange.Text = "Browse";
             this.Button_DisplayDirChange.UseVisualStyleBackColor = true;
             this.Button_DisplayDirChange.Click += new System.EventHandler(this.Button_DisplayDirChange_Click);
             // 
             // TextBox_SavedFileDirPath
             // 
-            this.TextBox_SavedFileDirPath.Location = new System.Drawing.Point(3, 17);
+            this.TextBox_SavedFileDirPath.Location = new System.Drawing.Point(48, 17);
             this.TextBox_SavedFileDirPath.Name = "TextBox_SavedFileDirPath";
             this.TextBox_SavedFileDirPath.ReadOnly = true;
-            this.TextBox_SavedFileDirPath.Size = new System.Drawing.Size(305, 22);
+            this.TextBox_SavedFileDirPath.Size = new System.Drawing.Size(224, 21);
             this.TextBox_SavedFileDirPath.TabIndex = 1;
             // 
             // label79
@@ -2749,7 +2829,7 @@ namespace ISC_Win_WinForm_GUI
             this.label79.AutoSize = true;
             this.label79.Location = new System.Drawing.Point(6, 555);
             this.label79.Name = "label79";
-            this.label79.Size = new System.Drawing.Size(104, 14);
+            this.label79.Size = new System.Drawing.Size(91, 13);
             this.label79.TabIndex = 99;
             this.label79.Text = "Num Scans to Avg.";
             // 
@@ -2768,11 +2848,10 @@ namespace ISC_Win_WinForm_GUI
             this.tabPage_Utility.Controls.Add(this.GroupBox_TivaFWUpdate);
             this.tabPage_Utility.Controls.Add(this.GroupBox_SerialNumber);
             this.tabPage_Utility.Controls.Add(this.GroupBox_ModelName);
-            this.tabPage_Utility.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.tabPage_Utility.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_Utility.Location = new System.Drawing.Point(4, 22);
             this.tabPage_Utility.Name = "tabPage_Utility";
             this.tabPage_Utility.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage_Utility.Size = new System.Drawing.Size(1256, 630);
+            this.tabPage_Utility.Size = new System.Drawing.Size(1256, 638);
             this.tabPage_Utility.TabIndex = 1;
             this.tabPage_Utility.Text = "Utility";
             this.tabPage_Utility.UseVisualStyleBackColor = true;
@@ -2782,9 +2861,9 @@ namespace ISC_Win_WinForm_GUI
             this.GroupBox_LogFile.Controls.Add(this.Button_DisableLog);
             this.GroupBox_LogFile.Controls.Add(this.Button_EnableLog);
             this.GroupBox_LogFile.Controls.Add(this.Label_LogStatus);
-            this.GroupBox_LogFile.Location = new System.Drawing.Point(883, 559);
+            this.GroupBox_LogFile.Location = new System.Drawing.Point(8, 559);
             this.GroupBox_LogFile.Name = "GroupBox_LogFile";
-            this.GroupBox_LogFile.Size = new System.Drawing.Size(348, 50);
+            this.GroupBox_LogFile.Size = new System.Drawing.Size(353, 50);
             this.GroupBox_LogFile.TabIndex = 13;
             this.GroupBox_LogFile.TabStop = false;
             this.GroupBox_LogFile.Text = "Log File";
@@ -2814,7 +2893,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_LogStatus.AutoSize = true;
             this.Label_LogStatus.Location = new System.Drawing.Point(6, 25);
             this.Label_LogStatus.Name = "Label_LogStatus";
-            this.Label_LogStatus.Size = new System.Drawing.Size(139, 14);
+            this.Label_LogStatus.Size = new System.Drawing.Size(119, 13);
             this.Label_LogStatus.TabIndex = 0;
             this.Label_LogStatus.Text = "Log File Status: Disable!";
             // 
@@ -2865,7 +2944,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_BLE_Display_Name.Location = new System.Drawing.Point(6, 21);
             this.TextBox_BLE_Display_Name.Name = "TextBox_BLE_Display_Name";
-            this.TextBox_BLE_Display_Name.Size = new System.Drawing.Size(237, 22);
+            this.TextBox_BLE_Display_Name.Size = new System.Drawing.Size(237, 21);
             this.TextBox_BLE_Display_Name.TabIndex = 0;
             this.TextBox_BLE_Display_Name.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_BLE_Display_Name.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TextBox_KeyDown);
@@ -2873,6 +2952,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // groupBox_Device
             // 
+            this.groupBox_Device.Controls.Add(this.button_SwitchDevice);
             this.groupBox_Device.Controls.Add(this.textBox_FanOffTime);
             this.groupBox_Device.Controls.Add(this.Button_GetFanDelayOffTime);
             this.groupBox_Device.Controls.Add(this.Button_SetFanDelayOffTime);
@@ -2889,17 +2969,27 @@ namespace ISC_Win_WinForm_GUI
             this.groupBox_Device.Controls.Add(this.label118);
             this.groupBox_Device.Location = new System.Drawing.Point(883, 385);
             this.groupBox_Device.Name = "groupBox_Device";
-            this.groupBox_Device.Size = new System.Drawing.Size(348, 168);
+            this.groupBox_Device.Size = new System.Drawing.Size(348, 250);
             this.groupBox_Device.TabIndex = 12;
             this.groupBox_Device.TabStop = false;
             this.groupBox_Device.Text = "Device";
             this.groupBox_Device.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.groupBox_Device_MouseDoubleClick);
             // 
+            // button_SwitchDevice
+            // 
+            this.button_SwitchDevice.Location = new System.Drawing.Point(186, 219);
+            this.button_SwitchDevice.Name = "button_SwitchDevice";
+            this.button_SwitchDevice.Size = new System.Drawing.Size(155, 25);
+            this.button_SwitchDevice.TabIndex = 26;
+            this.button_SwitchDevice.Text = "Switch Device";
+            this.button_SwitchDevice.UseVisualStyleBackColor = true;
+            this.button_SwitchDevice.Click += new System.EventHandler(this.button_SwitchDevice_Click);
+            // 
             // textBox_FanOffTime
             // 
             this.textBox_FanOffTime.Location = new System.Drawing.Point(90, 139);
             this.textBox_FanOffTime.Name = "textBox_FanOffTime";
-            this.textBox_FanOffTime.Size = new System.Drawing.Size(90, 22);
+            this.textBox_FanOffTime.Size = new System.Drawing.Size(90, 21);
             this.textBox_FanOffTime.TabIndex = 19;
             this.textBox_FanOffTime.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.textBox_FanOffTime.Visible = false;
@@ -2931,7 +3021,7 @@ namespace ISC_Win_WinForm_GUI
             this.label_FanOffTimeSetting.AutoSize = true;
             this.label_FanOffTimeSetting.Location = new System.Drawing.Point(6, 142);
             this.label_FanOffTimeSetting.Name = "label_FanOffTimeSetting";
-            this.label_FanOffTimeSetting.Size = new System.Drawing.Size(78, 14);
+            this.label_FanOffTimeSetting.Size = new System.Drawing.Size(67, 13);
             this.label_FanOffTimeSetting.TabIndex = 18;
             this.label_FanOffTimeSetting.Text = "Fan Off Time:";
             this.label_FanOffTimeSetting.Visible = false;
@@ -2964,7 +3054,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_ButtonStatus.AutoSize = true;
             this.Label_ButtonStatus.Location = new System.Drawing.Point(6, 113);
             this.Label_ButtonStatus.Name = "Label_ButtonStatus";
-            this.Label_ButtonStatus.Size = new System.Drawing.Size(86, 14);
+            this.Label_ButtonStatus.Size = new System.Drawing.Size(75, 13);
             this.Label_ButtonStatus.TabIndex = 12;
             this.Label_ButtonStatus.Text = "Button Status: ";
             // 
@@ -2993,7 +3083,7 @@ namespace ISC_Win_WinForm_GUI
             this.label_RestoreFacRef.AutoSize = true;
             this.label_RestoreFacRef.Location = new System.Drawing.Point(6, 82);
             this.label_RestoreFacRef.Name = "label_RestoreFacRef";
-            this.label_RestoreFacRef.Size = new System.Drawing.Size(148, 14);
+            this.label_RestoreFacRef.Size = new System.Drawing.Size(131, 13);
             this.label_RestoreFacRef.TabIndex = 6;
             this.label_RestoreFacRef.Text = "Restore Factory Reference";
             // 
@@ -3012,7 +3102,7 @@ namespace ISC_Win_WinForm_GUI
             this.label119.AutoSize = true;
             this.label119.Location = new System.Drawing.Point(6, 53);
             this.label119.Name = "label119";
-            this.label119.Size = new System.Drawing.Size(134, 14);
+            this.label119.Size = new System.Drawing.Size(117, 13);
             this.label119.TabIndex = 2;
             this.label119.Text = "Update Reference Data";
             // 
@@ -3031,7 +3121,7 @@ namespace ISC_Win_WinForm_GUI
             this.label118.AutoSize = true;
             this.label118.Location = new System.Drawing.Point(6, 25);
             this.label118.Name = "label118";
-            this.label118.Size = new System.Drawing.Size(79, 14);
+            this.label118.Size = new System.Drawing.Size(70, 13);
             this.label118.TabIndex = 0;
             this.label118.Text = "Reset System";
             // 
@@ -3054,7 +3144,7 @@ namespace ISC_Win_WinForm_GUI
             this.label_ActivateStatus.AutoSize = true;
             this.label_ActivateStatus.Location = new System.Drawing.Point(70, 55);
             this.label_ActivateStatus.Name = "label_ActivateStatus";
-            this.label_ActivateStatus.Size = new System.Drawing.Size(82, 14);
+            this.label_ActivateStatus.Size = new System.Drawing.Size(74, 13);
             this.label_ActivateStatus.TabIndex = 4;
             this.label_ActivateStatus.Text = "Not activated!";
             // 
@@ -3063,7 +3153,7 @@ namespace ISC_Win_WinForm_GUI
             this.Status.AutoSize = true;
             this.Status.Location = new System.Drawing.Point(22, 55);
             this.Status.Name = "Status";
-            this.Status.Size = new System.Drawing.Size(47, 14);
+            this.Status.Size = new System.Drawing.Size(42, 13);
             this.Status.TabIndex = 3;
             this.Status.Text = "Status :";
             // 
@@ -3081,7 +3171,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_Key.Location = new System.Drawing.Point(73, 20);
             this.TextBox_Key.Name = "TextBox_Key";
-            this.TextBox_Key.Size = new System.Drawing.Size(173, 22);
+            this.TextBox_Key.Size = new System.Drawing.Size(173, 21);
             this.TextBox_Key.TabIndex = 1;
             // 
             // label117
@@ -3089,7 +3179,7 @@ namespace ISC_Win_WinForm_GUI
             this.label117.AutoSize = true;
             this.label117.Location = new System.Drawing.Point(6, 23);
             this.label117.Name = "label117";
-            this.label117.Size = new System.Drawing.Size(63, 14);
+            this.label117.Size = new System.Drawing.Size(56, 13);
             this.label117.TabIndex = 0;
             this.label117.Text = "Input Key :";
             // 
@@ -3127,12 +3217,13 @@ namespace ISC_Win_WinForm_GUI
             // Label_BleNameValue
             // 
             this.Label_BleNameValue.Enabled = false;
-            this.Label_BleNameValue.Location = new System.Drawing.Point(200, 249);
+            this.Label_BleNameValue.Location = new System.Drawing.Point(180, 249);
             this.Label_BleNameValue.Name = "Label_BleNameValue";
-            this.Label_BleNameValue.Size = new System.Drawing.Size(142, 14);
+            this.Label_BleNameValue.Size = new System.Drawing.Size(160, 14);
             this.Label_BleNameValue.TabIndex = 23;
             this.Label_BleNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.toolTip1.SetToolTip(this.Label_BleNameValue, "Double Click to Copy Text");
+            this.Label_BleNameValue.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // Label_Blename
             // 
@@ -3140,177 +3231,187 @@ namespace ISC_Win_WinForm_GUI
             this.Label_Blename.Enabled = false;
             this.Label_Blename.Location = new System.Drawing.Point(6, 249);
             this.Label_Blename.Name = "Label_Blename";
-            this.Label_Blename.Size = new System.Drawing.Size(123, 14);
+            this.Label_Blename.Size = new System.Drawing.Size(107, 13);
             this.Label_Blename.TabIndex = 22;
             this.Label_Blename.Text = "BLE Advertising Name";
             // 
             // label_DevInfoLampUsageValue
             // 
-            this.label_DevInfoLampUsageValue.Location = new System.Drawing.Point(200, 226);
+            this.label_DevInfoLampUsageValue.Location = new System.Drawing.Point(180, 226);
             this.label_DevInfoLampUsageValue.Name = "label_DevInfoLampUsageValue";
-            this.label_DevInfoLampUsageValue.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoLampUsageValue.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoLampUsageValue.TabIndex = 21;
             this.toolTip1.SetToolTip(this.label_DevInfoLampUsageValue, "Double Click to Copy Text");
+            this.label_DevInfoLampUsageValue.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label_DevInfoLampUsage
             // 
             this.label_DevInfoLampUsage.AutoSize = true;
             this.label_DevInfoLampUsage.Location = new System.Drawing.Point(6, 226);
             this.label_DevInfoLampUsage.Name = "label_DevInfoLampUsage";
-            this.label_DevInfoLampUsage.Size = new System.Drawing.Size(73, 14);
+            this.label_DevInfoLampUsage.Size = new System.Drawing.Size(64, 13);
             this.label_DevInfoLampUsage.TabIndex = 20;
             this.label_DevInfoLampUsage.Text = "Lamp Usage";
             // 
             // label_DevInfoUUID
             // 
-            this.label_DevInfoUUID.Location = new System.Drawing.Point(200, 203);
+            this.label_DevInfoUUID.Location = new System.Drawing.Point(180, 203);
             this.label_DevInfoUUID.Name = "label_DevInfoUUID";
-            this.label_DevInfoUUID.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoUUID.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoUUID.TabIndex = 19;
             this.toolTip1.SetToolTip(this.label_DevInfoUUID, "Double Click to Copy Text");
+            this.label_DevInfoUUID.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label114
             // 
             this.label114.AutoSize = true;
             this.label114.Location = new System.Drawing.Point(6, 203);
             this.label114.Name = "label114";
-            this.label114.Size = new System.Drawing.Size(74, 14);
+            this.label114.Size = new System.Drawing.Size(65, 13);
             this.label114.TabIndex = 18;
             this.label114.Text = "Device UUID";
             // 
             // label_DevInfoManfacSerNum
             // 
-            this.label_DevInfoManfacSerNum.Location = new System.Drawing.Point(200, 180);
+            this.label_DevInfoManfacSerNum.Location = new System.Drawing.Point(180, 180);
             this.label_DevInfoManfacSerNum.Name = "label_DevInfoManfacSerNum";
-            this.label_DevInfoManfacSerNum.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoManfacSerNum.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoManfacSerNum.TabIndex = 17;
             this.toolTip1.SetToolTip(this.label_DevInfoManfacSerNum, "Double Click to Copy Text");
+            this.label_DevInfoManfacSerNum.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label_MFC_Seri_Num
             // 
             this.label_MFC_Seri_Num.AutoSize = true;
             this.label_MFC_Seri_Num.Location = new System.Drawing.Point(6, 180);
             this.label_MFC_Seri_Num.Name = "label_MFC_Seri_Num";
-            this.label_MFC_Seri_Num.Size = new System.Drawing.Size(167, 14);
+            this.label_MFC_Seri_Num.Size = new System.Drawing.Size(145, 13);
             this.label_MFC_Seri_Num.TabIndex = 16;
             this.label_MFC_Seri_Num.Text = "Manufacturing Serial Number";
             // 
             // label_DevInfoDevSerNum
             // 
-            this.label_DevInfoDevSerNum.Location = new System.Drawing.Point(200, 157);
+            this.label_DevInfoDevSerNum.Location = new System.Drawing.Point(180, 157);
             this.label_DevInfoDevSerNum.Name = "label_DevInfoDevSerNum";
-            this.label_DevInfoDevSerNum.Size = new System.Drawing.Size(142, 13);
+            this.label_DevInfoDevSerNum.Size = new System.Drawing.Size(160, 13);
             this.label_DevInfoDevSerNum.TabIndex = 15;
             this.toolTip1.SetToolTip(this.label_DevInfoDevSerNum, "Double Click to Copy Text");
+            this.label_DevInfoDevSerNum.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label104
             // 
             this.label104.AutoSize = true;
             this.label104.Location = new System.Drawing.Point(6, 157);
             this.label104.Name = "label104";
-            this.label104.Size = new System.Drawing.Size(124, 14);
+            this.label104.Size = new System.Drawing.Size(108, 13);
             this.label104.TabIndex = 14;
             this.label104.Text = "Device Serial Number";
             // 
             // label_DevInfoModelName
             // 
-            this.label_DevInfoModelName.Location = new System.Drawing.Point(200, 133);
+            this.label_DevInfoModelName.Location = new System.Drawing.Point(180, 133);
             this.label_DevInfoModelName.Name = "label_DevInfoModelName";
-            this.label_DevInfoModelName.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoModelName.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoModelName.TabIndex = 13;
             this.toolTip1.SetToolTip(this.label_DevInfoModelName, "Double Click to Copy Text");
+            this.label_DevInfoModelName.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label106
             // 
             this.label106.AutoSize = true;
             this.label106.Location = new System.Drawing.Point(6, 133);
             this.label106.Name = "label106";
-            this.label106.Size = new System.Drawing.Size(77, 14);
+            this.label106.Size = new System.Drawing.Size(67, 13);
             this.label106.TabIndex = 12;
             this.label106.Text = "Model Name";
             // 
             // label_DevInfoDetectorBoardVer
             // 
-            this.label_DevInfoDetectorBoardVer.Location = new System.Drawing.Point(200, 110);
+            this.label_DevInfoDetectorBoardVer.Location = new System.Drawing.Point(180, 110);
             this.label_DevInfoDetectorBoardVer.Name = "label_DevInfoDetectorBoardVer";
-            this.label_DevInfoDetectorBoardVer.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoDetectorBoardVer.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoDetectorBoardVer.TabIndex = 11;
             this.toolTip1.SetToolTip(this.label_DevInfoDetectorBoardVer, "Double Click to Copy Text");
+            this.label_DevInfoDetectorBoardVer.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label108
             // 
             this.label108.AutoSize = true;
             this.label108.Location = new System.Drawing.Point(6, 110);
             this.label108.Name = "label108";
-            this.label108.Size = new System.Drawing.Size(132, 14);
+            this.label108.Size = new System.Drawing.Size(116, 13);
             this.label108.TabIndex = 10;
             this.label108.Text = "Detector Board Version";
             // 
             // label_DevInfoMainBoardVer
             // 
-            this.label_DevInfoMainBoardVer.Location = new System.Drawing.Point(200, 88);
+            this.label_DevInfoMainBoardVer.Location = new System.Drawing.Point(180, 88);
             this.label_DevInfoMainBoardVer.Name = "label_DevInfoMainBoardVer";
-            this.label_DevInfoMainBoardVer.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoMainBoardVer.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoMainBoardVer.TabIndex = 9;
             this.toolTip1.SetToolTip(this.label_DevInfoMainBoardVer, "Double Click to Copy Text");
+            this.label_DevInfoMainBoardVer.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label110
             // 
             this.label110.AutoSize = true;
             this.label110.Location = new System.Drawing.Point(6, 88);
             this.label110.Name = "label110";
-            this.label110.Size = new System.Drawing.Size(114, 14);
+            this.label110.Size = new System.Drawing.Size(98, 13);
             this.label110.TabIndex = 8;
             this.label110.Text = "Main Board Version";
             // 
             // label_DevInfoDLPCVer
             // 
-            this.label_DevInfoDLPCVer.Location = new System.Drawing.Point(200, 65);
+            this.label_DevInfoDLPCVer.Location = new System.Drawing.Point(180, 65);
             this.label_DevInfoDLPCVer.Name = "label_DevInfoDLPCVer";
-            this.label_DevInfoDLPCVer.Size = new System.Drawing.Size(142, 14);
+            this.label_DevInfoDLPCVer.Size = new System.Drawing.Size(160, 14);
             this.label_DevInfoDLPCVer.TabIndex = 5;
             this.toolTip1.SetToolTip(this.label_DevInfoDLPCVer, "Double Click to Copy Text");
+            this.label_DevInfoDLPCVer.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label102
             // 
             this.label102.AutoSize = true;
             this.label102.Location = new System.Drawing.Point(6, 65);
             this.label102.Name = "label102";
-            this.label102.Size = new System.Drawing.Size(109, 14);
+            this.label102.Size = new System.Drawing.Size(95, 13);
             this.label102.TabIndex = 4;
             this.label102.Text = "DLPC Flash Version";
             // 
             // label_DevInfoTivaSWVer
             // 
-            this.label_DevInfoTivaSWVer.Location = new System.Drawing.Point(200, 41);
+            this.label_DevInfoTivaSWVer.Location = new System.Drawing.Point(180, 41);
             this.label_DevInfoTivaSWVer.Name = "label_DevInfoTivaSWVer";
-            this.label_DevInfoTivaSWVer.Size = new System.Drawing.Size(142, 15);
+            this.label_DevInfoTivaSWVer.Size = new System.Drawing.Size(160, 15);
             this.label_DevInfoTivaSWVer.TabIndex = 3;
             this.toolTip1.SetToolTip(this.label_DevInfoTivaSWVer, "Double Click to Copy Text");
+            this.label_DevInfoTivaSWVer.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label98
             // 
             this.label98.AutoSize = true;
             this.label98.Location = new System.Drawing.Point(6, 42);
             this.label98.Name = "label98";
-            this.label98.Size = new System.Drawing.Size(93, 14);
+            this.label98.Size = new System.Drawing.Size(80, 13);
             this.label98.TabIndex = 2;
             this.label98.Text = "Tiva SW Version";
             // 
             // label_DevInfoGUIVer
             // 
-            this.label_DevInfoGUIVer.Location = new System.Drawing.Point(200, 18);
+            this.label_DevInfoGUIVer.Location = new System.Drawing.Point(180, 18);
             this.label_DevInfoGUIVer.Name = "label_DevInfoGUIVer";
-            this.label_DevInfoGUIVer.Size = new System.Drawing.Size(142, 15);
+            this.label_DevInfoGUIVer.Size = new System.Drawing.Size(160, 15);
             this.label_DevInfoGUIVer.TabIndex = 1;
             this.toolTip1.SetToolTip(this.label_DevInfoGUIVer, "Double Click to Copy Text");
+            this.label_DevInfoGUIVer.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.label_MouseDoubleClick);
             // 
             // label95
             // 
             this.label95.AutoSize = true;
             this.label95.Location = new System.Drawing.Point(6, 19);
             this.label95.Name = "label95";
-            this.label95.Size = new System.Drawing.Size(71, 14);
+            this.label95.Size = new System.Drawing.Size(61, 13);
             this.label95.TabIndex = 0;
             this.label95.Text = "GUI Version";
             // 
@@ -3387,6 +3488,7 @@ namespace ISC_Win_WinForm_GUI
             this.Button_Cal_WriteGenCoeffs.TabIndex = 7;
             this.Button_Cal_WriteGenCoeffs.Text = "Write Generic Data";
             this.Button_Cal_WriteGenCoeffs.UseVisualStyleBackColor = true;
+            this.Button_Cal_WriteGenCoeffs.Visible = false;
             this.Button_Cal_WriteGenCoeffs.Click += new System.EventHandler(this.Button_Cal_WriteGenCoeffs_Click);
             // 
             // CheckBox_Cal_WriteEnable
@@ -3394,7 +3496,7 @@ namespace ISC_Win_WinForm_GUI
             this.CheckBox_Cal_WriteEnable.AutoSize = true;
             this.CheckBox_Cal_WriteEnable.Location = new System.Drawing.Point(9, 141);
             this.CheckBox_Cal_WriteEnable.Name = "CheckBox_Cal_WriteEnable";
-            this.CheckBox_Cal_WriteEnable.Size = new System.Drawing.Size(97, 18);
+            this.CheckBox_Cal_WriteEnable.Size = new System.Drawing.Size(87, 17);
             this.CheckBox_Cal_WriteEnable.TabIndex = 6;
             this.CheckBox_Cal_WriteEnable.Text = "Write Enable";
             this.CheckBox_Cal_WriteEnable.UseVisualStyleBackColor = true;
@@ -3404,7 +3506,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_ShiftVectCoeff2.Location = new System.Drawing.Point(265, 217);
             this.TextBox_ShiftVectCoeff2.Name = "TextBox_ShiftVectCoeff2";
-            this.TextBox_ShiftVectCoeff2.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_ShiftVectCoeff2.Size = new System.Drawing.Size(127, 21);
             this.TextBox_ShiftVectCoeff2.TabIndex = 5;
             // 
             // label28
@@ -3412,7 +3514,7 @@ namespace ISC_Win_WinForm_GUI
             this.label28.AutoSize = true;
             this.label28.Location = new System.Drawing.Point(136, 222);
             this.label28.Name = "label28";
-            this.label28.Size = new System.Drawing.Size(95, 14);
+            this.label28.Size = new System.Drawing.Size(84, 13);
             this.label28.TabIndex = 22;
             this.label28.Text = "Shift Vect Coeff 2";
             // 
@@ -3420,7 +3522,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_ShiftVectCoeff1.Location = new System.Drawing.Point(265, 177);
             this.TextBox_ShiftVectCoeff1.Name = "TextBox_ShiftVectCoeff1";
-            this.TextBox_ShiftVectCoeff1.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_ShiftVectCoeff1.Size = new System.Drawing.Size(127, 21);
             this.TextBox_ShiftVectCoeff1.TabIndex = 4;
             // 
             // label31
@@ -3428,7 +3530,7 @@ namespace ISC_Win_WinForm_GUI
             this.label31.AutoSize = true;
             this.label31.Location = new System.Drawing.Point(136, 182);
             this.label31.Name = "label31";
-            this.label31.Size = new System.Drawing.Size(95, 14);
+            this.label31.Size = new System.Drawing.Size(84, 13);
             this.label31.TabIndex = 18;
             this.label31.Text = "Shift Vect Coeff 1";
             // 
@@ -3436,7 +3538,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_ShiftVectCoeff0.Location = new System.Drawing.Point(265, 137);
             this.TextBox_ShiftVectCoeff0.Name = "TextBox_ShiftVectCoeff0";
-            this.TextBox_ShiftVectCoeff0.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_ShiftVectCoeff0.Size = new System.Drawing.Size(127, 21);
             this.TextBox_ShiftVectCoeff0.TabIndex = 3;
             // 
             // label22
@@ -3444,7 +3546,7 @@ namespace ISC_Win_WinForm_GUI
             this.label22.AutoSize = true;
             this.label22.Location = new System.Drawing.Point(136, 142);
             this.label22.Name = "label22";
-            this.label22.Size = new System.Drawing.Size(95, 14);
+            this.label22.Size = new System.Drawing.Size(84, 13);
             this.label22.TabIndex = 14;
             this.label22.Text = "Shift Vect Coeff 0";
             // 
@@ -3452,7 +3554,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_P2WCoeff2.Location = new System.Drawing.Point(265, 97);
             this.TextBox_P2WCoeff2.Name = "TextBox_P2WCoeff2";
-            this.TextBox_P2WCoeff2.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_P2WCoeff2.Size = new System.Drawing.Size(127, 21);
             this.TextBox_P2WCoeff2.TabIndex = 2;
             // 
             // label25
@@ -3460,7 +3562,7 @@ namespace ISC_Win_WinForm_GUI
             this.label25.AutoSize = true;
             this.label25.Location = new System.Drawing.Point(136, 102);
             this.label25.Name = "label25";
-            this.label25.Size = new System.Drawing.Size(95, 14);
+            this.label25.Size = new System.Drawing.Size(85, 13);
             this.label25.TabIndex = 10;
             this.label25.Text = "Pix-Wave Coeff 2";
             // 
@@ -3469,7 +3571,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_ScanCfgVer.AutoSize = true;
             this.Label_ScanCfgVer.Location = new System.Drawing.Point(104, 102);
             this.Label_ScanCfgVer.Name = "Label_ScanCfgVer";
-            this.Label_ScanCfgVer.Size = new System.Drawing.Size(13, 14);
+            this.Label_ScanCfgVer.Size = new System.Drawing.Size(13, 13);
             this.Label_ScanCfgVer.TabIndex = 9;
             this.Label_ScanCfgVer.Text = "0";
             // 
@@ -3478,7 +3580,7 @@ namespace ISC_Win_WinForm_GUI
             this.label27.AutoSize = true;
             this.label27.Location = new System.Drawing.Point(6, 102);
             this.label27.Name = "label27";
-            this.label27.Size = new System.Drawing.Size(77, 14);
+            this.label27.Size = new System.Drawing.Size(67, 13);
             this.label27.TabIndex = 8;
             this.label27.Text = "Scan Cfg Ver :";
             // 
@@ -3486,7 +3588,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_P2WCoeff1.Location = new System.Drawing.Point(265, 57);
             this.TextBox_P2WCoeff1.Name = "TextBox_P2WCoeff1";
-            this.TextBox_P2WCoeff1.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_P2WCoeff1.Size = new System.Drawing.Size(127, 21);
             this.TextBox_P2WCoeff1.TabIndex = 1;
             // 
             // label19
@@ -3494,7 +3596,7 @@ namespace ISC_Win_WinForm_GUI
             this.label19.AutoSize = true;
             this.label19.Location = new System.Drawing.Point(136, 62);
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(95, 14);
+            this.label19.Size = new System.Drawing.Size(85, 13);
             this.label19.TabIndex = 6;
             this.label19.Text = "Pix-Wave Coeff 1";
             // 
@@ -3503,7 +3605,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_RefCalVer.AutoSize = true;
             this.Label_RefCalVer.Location = new System.Drawing.Point(104, 62);
             this.Label_RefCalVer.Name = "Label_RefCalVer";
-            this.Label_RefCalVer.Size = new System.Drawing.Size(13, 14);
+            this.Label_RefCalVer.Size = new System.Drawing.Size(13, 13);
             this.Label_RefCalVer.TabIndex = 5;
             this.Label_RefCalVer.Text = "0";
             // 
@@ -3512,7 +3614,7 @@ namespace ISC_Win_WinForm_GUI
             this.label21.AutoSize = true;
             this.label21.Location = new System.Drawing.Point(6, 62);
             this.label21.Name = "label21";
-            this.label21.Size = new System.Drawing.Size(71, 14);
+            this.label21.Size = new System.Drawing.Size(61, 13);
             this.label21.TabIndex = 4;
             this.label21.Text = "Ref Cal Ver :";
             // 
@@ -3520,7 +3622,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_P2WCoeff0.Location = new System.Drawing.Point(265, 17);
             this.TextBox_P2WCoeff0.Name = "TextBox_P2WCoeff0";
-            this.TextBox_P2WCoeff0.Size = new System.Drawing.Size(127, 22);
+            this.TextBox_P2WCoeff0.Size = new System.Drawing.Size(127, 21);
             this.TextBox_P2WCoeff0.TabIndex = 0;
             // 
             // label23
@@ -3528,7 +3630,7 @@ namespace ISC_Win_WinForm_GUI
             this.label23.AutoSize = true;
             this.label23.Location = new System.Drawing.Point(136, 22);
             this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(95, 14);
+            this.label23.Size = new System.Drawing.Size(85, 13);
             this.label23.TabIndex = 2;
             this.label23.Text = "Pix-Wave Coeff 0";
             // 
@@ -3537,7 +3639,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_CalCoeffVer.AutoSize = true;
             this.Label_CalCoeffVer.Location = new System.Drawing.Point(104, 22);
             this.Label_CalCoeffVer.Name = "Label_CalCoeffVer";
-            this.Label_CalCoeffVer.Size = new System.Drawing.Size(13, 14);
+            this.Label_CalCoeffVer.Size = new System.Drawing.Size(13, 13);
             this.Label_CalCoeffVer.TabIndex = 1;
             this.Label_CalCoeffVer.Text = "0";
             // 
@@ -3546,7 +3648,7 @@ namespace ISC_Win_WinForm_GUI
             this.label29.AutoSize = true;
             this.label29.Location = new System.Drawing.Point(6, 22);
             this.label29.Name = "label29";
-            this.label29.Size = new System.Drawing.Size(80, 14);
+            this.label29.Size = new System.Drawing.Size(70, 13);
             this.label29.TabIndex = 0;
             this.label29.Text = "Cal Coeff Ver :";
             // 
@@ -3665,7 +3767,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_SensorLampCM2.AutoSize = true;
             this.Label_SensorLampCM2.Location = new System.Drawing.Point(6, 218);
             this.Label_SensorLampCM2.Name = "Label_SensorLampCM2";
-            this.Label_SensorLampCM2.Size = new System.Drawing.Size(61, 14);
+            this.Label_SensorLampCM2.Size = new System.Drawing.Size(56, 13);
             this.Label_SensorLampCM2.TabIndex = 16;
             this.Label_SensorLampCM2.Text = "Lamp CM2";
             // 
@@ -3674,7 +3776,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_SensorLampCM1.AutoSize = true;
             this.Label_SensorLampCM1.Location = new System.Drawing.Point(6, 168);
             this.Label_SensorLampCM1.Name = "Label_SensorLampCM1";
-            this.Label_SensorLampCM1.Size = new System.Drawing.Size(61, 14);
+            this.Label_SensorLampCM1.Size = new System.Drawing.Size(56, 13);
             this.Label_SensorLampCM1.TabIndex = 15;
             this.Label_SensorLampCM1.Text = "Lamp CM1";
             // 
@@ -3683,7 +3785,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_SensorLampVM2.AutoSize = true;
             this.Label_SensorLampVM2.Location = new System.Drawing.Point(6, 193);
             this.Label_SensorLampVM2.Name = "Label_SensorLampVM2";
-            this.Label_SensorLampVM2.Size = new System.Drawing.Size(62, 14);
+            this.Label_SensorLampVM2.Size = new System.Drawing.Size(56, 13);
             this.Label_SensorLampVM2.TabIndex = 14;
             this.Label_SensorLampVM2.Text = "Lamp VM2";
             // 
@@ -3692,7 +3794,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_SensorLampVM1.AutoSize = true;
             this.Label_SensorLampVM1.Location = new System.Drawing.Point(6, 143);
             this.Label_SensorLampVM1.Name = "Label_SensorLampVM1";
-            this.Label_SensorLampVM1.Size = new System.Drawing.Size(62, 14);
+            this.Label_SensorLampVM1.Size = new System.Drawing.Size(56, 13);
             this.Label_SensorLampVM1.TabIndex = 5;
             this.Label_SensorLampVM1.Text = "Lamp VM1";
             // 
@@ -3701,7 +3803,7 @@ namespace ISC_Win_WinForm_GUI
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(6, 118);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(61, 14);
+            this.label8.Size = new System.Drawing.Size(53, 13);
             this.label8.TabIndex = 4;
             this.label8.Text = "Tiva Temp";
             // 
@@ -3710,7 +3812,7 @@ namespace ISC_Win_WinForm_GUI
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(6, 93);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(77, 14);
+            this.label5.Size = new System.Drawing.Size(68, 13);
             this.label5.TabIndex = 3;
             this.label5.Text = "System Temp";
             // 
@@ -3719,7 +3821,7 @@ namespace ISC_Win_WinForm_GUI
             this.label_sys_humidity.AutoSize = true;
             this.label_sys_humidity.Location = new System.Drawing.Point(6, 68);
             this.label_sys_humidity.Name = "label_sys_humidity";
-            this.label_sys_humidity.Size = new System.Drawing.Size(97, 14);
+            this.label_sys_humidity.Size = new System.Drawing.Size(86, 13);
             this.label_sys_humidity.TabIndex = 2;
             this.label_sys_humidity.Text = "System Humidity";
             // 
@@ -3728,7 +3830,7 @@ namespace ISC_Win_WinForm_GUI
             this.lb_BattCapTitle.AutoSize = true;
             this.lb_BattCapTitle.Location = new System.Drawing.Point(6, 43);
             this.lb_BattCapTitle.Name = "lb_BattCapTitle";
-            this.lb_BattCapTitle.Size = new System.Drawing.Size(93, 14);
+            this.lb_BattCapTitle.Size = new System.Drawing.Size(84, 13);
             this.lb_BattCapTitle.TabIndex = 1;
             this.lb_BattCapTitle.Text = "Battery Capacity";
             // 
@@ -3737,7 +3839,7 @@ namespace ISC_Win_WinForm_GUI
             this.lb_BattChargerStatusTitle.AutoSize = true;
             this.lb_BattChargerStatusTitle.Location = new System.Drawing.Point(6, 18);
             this.lb_BattChargerStatusTitle.Name = "lb_BattChargerStatusTitle";
-            this.lb_BattChargerStatusTitle.Size = new System.Drawing.Size(126, 14);
+            this.lb_BattChargerStatusTitle.Size = new System.Drawing.Size(112, 13);
             this.lb_BattChargerStatusTitle.TabIndex = 0;
             this.lb_BattChargerStatusTitle.Text = "Battery Charger Status";
             // 
@@ -3777,7 +3879,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_DateTime.Location = new System.Drawing.Point(7, 22);
             this.TextBox_DateTime.Name = "TextBox_DateTime";
-            this.TextBox_DateTime.Size = new System.Drawing.Size(156, 22);
+            this.TextBox_DateTime.Size = new System.Drawing.Size(156, 21);
             this.TextBox_DateTime.TabIndex = 0;
             // 
             // GroupBox_LampUsage
@@ -3798,7 +3900,7 @@ namespace ISC_Win_WinForm_GUI
             this.label4.AutoSize = true;
             this.label4.Location = new System.Drawing.Point(117, 25);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(46, 14);
+            this.label4.Size = new System.Drawing.Size(40, 13);
             this.label4.TabIndex = 3;
             this.label4.Text = "(hours)";
             // 
@@ -3826,7 +3928,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_LampUsage.Location = new System.Drawing.Point(7, 22);
             this.TextBox_LampUsage.Name = "TextBox_LampUsage";
-            this.TextBox_LampUsage.Size = new System.Drawing.Size(104, 22);
+            this.TextBox_LampUsage.Size = new System.Drawing.Size(104, 21);
             this.TextBox_LampUsage.TabIndex = 0;
             // 
             // GroupBox_DLPC150FWUpdate
@@ -3874,7 +3976,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_DLPC150FWPath.Location = new System.Drawing.Point(76, 19);
             this.TextBox_DLPC150FWPath.Name = "TextBox_DLPC150FWPath";
-            this.TextBox_DLPC150FWPath.Size = new System.Drawing.Size(343, 22);
+            this.TextBox_DLPC150FWPath.Size = new System.Drawing.Size(343, 21);
             this.TextBox_DLPC150FWPath.TabIndex = 1;
             // 
             // label9
@@ -3882,7 +3984,7 @@ namespace ISC_Win_WinForm_GUI
             this.label9.AutoSize = true;
             this.label9.Location = new System.Drawing.Point(7, 22);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(63, 14);
+            this.label9.Size = new System.Drawing.Size(54, 13);
             this.label9.TabIndex = 0;
             this.label9.Text = "File Name";
             // 
@@ -3931,7 +4033,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             this.TextBox_TivaFWPath.Location = new System.Drawing.Point(76, 19);
             this.TextBox_TivaFWPath.Name = "TextBox_TivaFWPath";
-            this.TextBox_TivaFWPath.Size = new System.Drawing.Size(343, 22);
+            this.TextBox_TivaFWPath.Size = new System.Drawing.Size(343, 21);
             this.TextBox_TivaFWPath.TabIndex = 1;
             // 
             // Label_TivaFWName
@@ -3939,7 +4041,7 @@ namespace ISC_Win_WinForm_GUI
             this.Label_TivaFWName.AutoSize = true;
             this.Label_TivaFWName.Location = new System.Drawing.Point(7, 22);
             this.Label_TivaFWName.Name = "Label_TivaFWName";
-            this.Label_TivaFWName.Size = new System.Drawing.Size(63, 14);
+            this.Label_TivaFWName.Size = new System.Drawing.Size(54, 13);
             this.Label_TivaFWName.TabIndex = 0;
             this.Label_TivaFWName.Text = "File Name";
             // 
@@ -3964,6 +4066,7 @@ namespace ISC_Win_WinForm_GUI
             this.Button_SerialNumberGet.Text = "Get";
             this.Button_SerialNumberGet.UseVisualStyleBackColor = true;
             this.Button_SerialNumberGet.Click += new System.EventHandler(this.Button_SerialNumberGet_Click);
+            this.Button_SerialNumberGet.MouseLeave += new System.EventHandler(this.Button_SerialNumberGet_MouseLeave);
             // 
             // Button_SerialNumberSet
             // 
@@ -3973,13 +4076,14 @@ namespace ISC_Win_WinForm_GUI
             this.Button_SerialNumberSet.TabIndex = 1;
             this.Button_SerialNumberSet.Text = "Set";
             this.Button_SerialNumberSet.UseVisualStyleBackColor = true;
+            this.Button_SerialNumberSet.Visible = false;
             this.Button_SerialNumberSet.Click += new System.EventHandler(this.Button_SerialNumberSet_Click);
             // 
             // TextBox_SerialNumber
             // 
             this.TextBox_SerialNumber.Location = new System.Drawing.Point(7, 22);
             this.TextBox_SerialNumber.Name = "TextBox_SerialNumber";
-            this.TextBox_SerialNumber.Size = new System.Drawing.Size(156, 22);
+            this.TextBox_SerialNumber.Size = new System.Drawing.Size(156, 21);
             this.TextBox_SerialNumber.TabIndex = 0;
             this.TextBox_SerialNumber.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_SerialNumber.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TextBox_KeyDown);
@@ -4006,6 +4110,7 @@ namespace ISC_Win_WinForm_GUI
             this.Button_ModelNameGet.Text = "Get";
             this.Button_ModelNameGet.UseVisualStyleBackColor = true;
             this.Button_ModelNameGet.Click += new System.EventHandler(this.Button_ModelNameGet_Click);
+            this.Button_ModelNameGet.MouseLeave += new System.EventHandler(this.Button_ModelNameGet_MouseLeave);
             // 
             // Button_ModelNameSet
             // 
@@ -4015,13 +4120,14 @@ namespace ISC_Win_WinForm_GUI
             this.Button_ModelNameSet.TabIndex = 1;
             this.Button_ModelNameSet.Text = "Set";
             this.Button_ModelNameSet.UseVisualStyleBackColor = true;
+            this.Button_ModelNameSet.Visible = false;
             this.Button_ModelNameSet.Click += new System.EventHandler(this.Button_ModelNameSet_Click);
             // 
             // TextBox_ModelName
             // 
             this.TextBox_ModelName.Location = new System.Drawing.Point(7, 22);
             this.TextBox_ModelName.Name = "TextBox_ModelName";
-            this.TextBox_ModelName.Size = new System.Drawing.Size(156, 22);
+            this.TextBox_ModelName.Size = new System.Drawing.Size(156, 21);
             this.TextBox_ModelName.TabIndex = 0;
             this.TextBox_ModelName.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             this.TextBox_ModelName.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TextBox_KeyDown);
@@ -4030,49 +4136,70 @@ namespace ISC_Win_WinForm_GUI
             // tabPage_about
             // 
             this.tabPage_about.Controls.Add(this.groupBox_About);
-            this.tabPage_about.Location = new System.Drawing.Point(4, 23);
+            this.tabPage_about.Location = new System.Drawing.Point(4, 22);
             this.tabPage_about.Name = "tabPage_about";
-            this.tabPage_about.Size = new System.Drawing.Size(1256, 630);
+            this.tabPage_about.Size = new System.Drawing.Size(1256, 638);
             this.tabPage_about.TabIndex = 2;
             this.tabPage_about.Text = "About";
             this.tabPage_about.UseVisualStyleBackColor = true;
             // 
             // groupBox_About
             // 
-            this.groupBox_About.Controls.Add(this.lb_GUI_Version);
-            this.groupBox_About.Controls.Add(this.label12);
+            this.groupBox_About.Controls.Add(this.button_disableUACAlert);
+            this.groupBox_About.Controls.Add(this.label_DisableUACAlert);
+            this.groupBox_About.Controls.Add(this.lb_GUI_Revision);
+            this.groupBox_About.Controls.Add(this.label_GUIVersion);
             this.groupBox_About.Controls.Add(this.button_About);
             this.groupBox_About.Controls.Add(this.button_AboutLicense);
             this.groupBox_About.Controls.Add(this.label_about_us);
             this.groupBox_About.Controls.Add(this.label_license_agree);
             this.groupBox_About.Location = new System.Drawing.Point(8, 12);
             this.groupBox_About.Name = "groupBox_About";
-            this.groupBox_About.Size = new System.Drawing.Size(235, 116);
+            this.groupBox_About.Size = new System.Drawing.Size(260, 137);
             this.groupBox_About.TabIndex = 16;
             this.groupBox_About.TabStop = false;
             this.groupBox_About.Text = "About";
             // 
-            // lb_GUI_Version
+            // button_disableUACAlert
             // 
-            this.lb_GUI_Version.Location = new System.Drawing.Point(156, 28);
-            this.lb_GUI_Version.Name = "lb_GUI_Version";
-            this.lb_GUI_Version.Size = new System.Drawing.Size(66, 14);
-            this.lb_GUI_Version.TabIndex = 11;
-            this.lb_GUI_Version.Text = "v1.0.0";
-            this.lb_GUI_Version.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.button_disableUACAlert.Location = new System.Drawing.Point(175, 49);
+            this.button_disableUACAlert.Name = "button_disableUACAlert";
+            this.button_disableUACAlert.Size = new System.Drawing.Size(66, 23);
+            this.button_disableUACAlert.TabIndex = 13;
+            this.button_disableUACAlert.Text = "Click";
+            this.button_disableUACAlert.UseVisualStyleBackColor = true;
+            this.button_disableUACAlert.Click += new System.EventHandler(this.button_button_disableUACAlert_Click);
             // 
-            // label12
+            // label_DisableUACAlert
             // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(11, 27);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(71, 14);
-            this.label12.TabIndex = 10;
-            this.label12.Text = "GUI Version";
+            this.label_DisableUACAlert.AutoSize = true;
+            this.label_DisableUACAlert.Location = new System.Drawing.Point(11, 55);
+            this.label_DisableUACAlert.Name = "label_DisableUACAlert";
+            this.label_DisableUACAlert.Size = new System.Drawing.Size(89, 13);
+            this.label_DisableUACAlert.TabIndex = 12;
+            this.label_DisableUACAlert.Text = "Disable UAC alert";
+            // 
+            // lb_GUI_Revision
+            // 
+            this.lb_GUI_Revision.Location = new System.Drawing.Point(161, 27);
+            this.lb_GUI_Revision.Name = "lb_GUI_Revision";
+            this.lb_GUI_Revision.Size = new System.Drawing.Size(96, 14);
+            this.lb_GUI_Revision.TabIndex = 11;
+            this.lb_GUI_Revision.Text = "v1.0.0";
+            this.lb_GUI_Revision.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label_GUIVersion
+            // 
+            this.label_GUIVersion.AutoSize = true;
+            this.label_GUIVersion.Location = new System.Drawing.Point(11, 27);
+            this.label_GUIVersion.Name = "label_GUIVersion";
+            this.label_GUIVersion.Size = new System.Drawing.Size(47, 13);
+            this.label_GUIVersion.TabIndex = 10;
+            this.label_GUIVersion.Text = "Revision";
             // 
             // button_About
             // 
-            this.button_About.Location = new System.Drawing.Point(154, 80);
+            this.button_About.Location = new System.Drawing.Point(175, 103);
             this.button_About.Name = "button_About";
             this.button_About.Size = new System.Drawing.Size(66, 23);
             this.button_About.TabIndex = 9;
@@ -4082,7 +4209,7 @@ namespace ISC_Win_WinForm_GUI
             // 
             // button_AboutLicense
             // 
-            this.button_AboutLicense.Location = new System.Drawing.Point(154, 51);
+            this.button_AboutLicense.Location = new System.Drawing.Point(175, 76);
             this.button_AboutLicense.Name = "button_AboutLicense";
             this.button_AboutLicense.Size = new System.Drawing.Size(66, 23);
             this.button_AboutLicense.TabIndex = 8;
@@ -4093,27 +4220,29 @@ namespace ISC_Win_WinForm_GUI
             // label_about_us
             // 
             this.label_about_us.AutoSize = true;
-            this.label_about_us.Location = new System.Drawing.Point(11, 84);
+            this.label_about_us.Location = new System.Drawing.Point(11, 111);
             this.label_about_us.Name = "label_about_us";
-            this.label_about_us.Size = new System.Drawing.Size(56, 14);
+            this.label_about_us.Size = new System.Drawing.Size(49, 13);
             this.label_about_us.TabIndex = 1;
             this.label_about_us.Text = "About Us";
             // 
             // label_license_agree
             // 
             this.label_license_agree.AutoSize = true;
-            this.label_license_agree.Location = new System.Drawing.Point(11, 55);
+            this.label_license_agree.Location = new System.Drawing.Point(11, 83);
             this.label_license_agree.Name = "label_license_agree";
-            this.label_license_agree.Size = new System.Drawing.Size(110, 14);
+            this.label_license_agree.Size = new System.Drawing.Size(97, 13);
             this.label_license_agree.TabIndex = 0;
             this.label_license_agree.Text = "License Agreement";
             // 
             // label_ErrorStatus
             // 
+            this.label_ErrorStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label_ErrorStatus.AutoSize = true;
-            this.label_ErrorStatus.Location = new System.Drawing.Point(550, 665);
+            this.label_ErrorStatus.BackColor = System.Drawing.Color.Transparent;
+            this.label_ErrorStatus.Location = new System.Drawing.Point(420, 675);
             this.label_ErrorStatus.Name = "label_ErrorStatus";
-            this.label_ErrorStatus.Size = new System.Drawing.Size(0, 14);
+            this.label_ErrorStatus.Size = new System.Drawing.Size(0, 13);
             this.label_ErrorStatus.TabIndex = 3;
             // 
             // timer_AutoClickScanButton
@@ -4123,21 +4252,18 @@ namespace ISC_Win_WinForm_GUI
             // 
             // MainWindow
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 14F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(1264, 682);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1264, 689);
             this.Controls.Add(this.label_ErrorStatus);
             this.Controls.Add(this.tabControl_MainFunctions);
             this.Controls.Add(this.statusStrip1);
-            this.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Calibri", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.MaximizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(920, 721);
+            this.MinimumSize = new System.Drawing.Size(1280, 726);
             this.Name = "MainWindow";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.SizeChanged += new System.EventHandler(this.MainWindow_SizeChanged);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.tabControl_MainFunctions.ResumeLayout(false);
@@ -4147,6 +4273,10 @@ namespace ISC_Win_WinForm_GUI
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
+            this.panel_Tooltips.ResumeLayout(false);
+            this.panel_Tooltips.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.tabScanPage.ResumeLayout(false);
             this.tabPage_ScanSetting.ResumeLayout(false);
             this.GroupBox_ContScan.ResumeLayout(false);
@@ -4361,11 +4491,11 @@ namespace ISC_Win_WinForm_GUI
         private System.Windows.Forms.ComboBox ComboBox_CfgExposure3;
         private System.Windows.Forms.ComboBox ComboBox_CfgExposure4;
         private System.Windows.Forms.ComboBox ComboBox_CfgExposure5;
-        private System.Windows.Forms.ComboBox ComboBox_CfgWidth1;
-        private System.Windows.Forms.ComboBox ComboBox_CfgWidth2;
-        private System.Windows.Forms.ComboBox ComboBox_CfgWidth3;
-        private System.Windows.Forms.ComboBox ComboBox_CfgWidth4;
-        private System.Windows.Forms.ComboBox ComboBox_CfgWidth5;
+        private MyComboBox ComboBox_CfgWidth1;
+        private MyComboBox ComboBox_CfgWidth2;
+        private MyComboBox ComboBox_CfgWidth3;
+        private MyComboBox ComboBox_CfgWidth4;
+        private MyComboBox ComboBox_CfgWidth5;
         private System.Windows.Forms.TextBox TextBox_CfgRangeEnd1;
         private System.Windows.Forms.TextBox TextBox_CfgRangeEnd2;
         private System.Windows.Forms.TextBox TextBox_CfgRangeEnd3;
@@ -4375,12 +4505,12 @@ namespace ISC_Win_WinForm_GUI
         private System.Windows.Forms.TextBox TextBox_CfgRangeStart2;
         private System.Windows.Forms.TextBox TextBox_CfgRangeStart3;
         private System.Windows.Forms.TextBox TextBox_CfgRangeStart4;
-        private System.Windows.Forms.ComboBox ComboBox_CfgScanType1;
-        private System.Windows.Forms.ComboBox ComboBox_CfgScanType2;
-        private System.Windows.Forms.ComboBox ComboBox_CfgScanType3;
-        private System.Windows.Forms.ComboBox ComboBox_CfgScanType4;
         private System.Windows.Forms.TextBox TextBox_CfgRangeStart5;
-        private System.Windows.Forms.ComboBox ComboBox_CfgScanType5;
+        private MyComboBox ComboBox_CfgScanType1;
+        private MyComboBox ComboBox_CfgScanType2;
+        private MyComboBox ComboBox_CfgScanType3;
+        private MyComboBox ComboBox_CfgScanType4;
+        private MyComboBox ComboBox_CfgScanType5;
         private System.Windows.Forms.Label label87;
         private System.Windows.Forms.Label label86;
         private System.Windows.Forms.Label label85;
@@ -4401,10 +4531,9 @@ namespace ISC_Win_WinForm_GUI
         private System.Windows.Forms.Button Button_Scan;
         private System.Windows.Forms.GroupBox GroupBox_GainControl;
         private System.Windows.Forms.CheckBox CheckBox_AutoGain;
-        private System.Windows.Forms.ComboBox ComboBox_PGAGain;
+        private MyComboBox ComboBox_PGAGain;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox CheckBox_LampOn;
-        private System.Windows.Forms.Label Label_CfgNumPatterns;
         private System.Windows.Forms.TabPage tabPage_about;
         private System.Windows.Forms.GroupBox groupBox_About;
         private System.Windows.Forms.Button button_About;
@@ -4412,7 +4541,7 @@ namespace ISC_Win_WinForm_GUI
         private System.Windows.Forms.Label label_about_us;
         private System.Windows.Forms.Label label_license_agree;
         private System.Windows.Forms.Label label_ActiveConfig;
-        private ComboBox comboBox_cfgNumSec;
+        private MyComboBox comboBox_cfgNumSec;
         private Label label_ErrorStatus;
         private TabPage tabPage_SaveScans;
         private Panel panel_Saved_Scan;
@@ -4466,7 +4595,7 @@ namespace ISC_Win_WinForm_GUI
         private Label label79;
         private CheckBox Check_Overlay;
         private GroupBox GroupBox_ContScan;
-        private Label label3;
+        private Label label_ContDelay;
         private TextBox Text_ContDelay;
         private Label label_ContinueScan;
         private TextBox Text_ContScan;
@@ -4489,12 +4618,6 @@ namespace ISC_Win_WinForm_GUI
         private Label label13;
         private Button button_clear;
         private CheckBox checkBox_zoom;
-        private CheckBox checkBox_tooltip;
-        private Label label_pattern5;
-        private Label label_pattern4;
-        private Label label_pattern3;
-        private Label label_pattern2;
-        private Label label_pattern1;
         private Label label14;
         private Label Label_SensorLampCM2;
         private Label Label_SensorLampCM1;
@@ -4511,13 +4634,11 @@ namespace ISC_Win_WinForm_GUI
         private Button Button_UnlockButton;
         private Label Label_ButtonStatus;
         private Button button_restore_fac_ref_warning;
-        private Label label_maxPattern5;
-        private Label label_maxPattern4;
-        private Label label_maxPattern3;
-        private Label label_maxPattern2;
-        private Label label_maxPattern1;
-        private Label label_totalPatterns;
-        private Label label7;
+        private Label label_overSampleRate5;
+        private Label label_overSampleRate4;
+        private Label label_overSampleRate3;
+        private Label label_overSampleRate2;
+        private Label label_overSampleRate1;
         private CheckBox checkBox_StopOnError;
         private Label label11;
         private Label label10;
@@ -4527,13 +4648,12 @@ namespace ISC_Win_WinForm_GUI
         private TextBox TextBox_SavedFileDirPath;
         private Label Label_BleNameValue;
         private Label Label_Blename;
-        private Label lb_GUI_Version;
-        private Label label12;
+        private Label lb_GUI_Revision;
+        private Label label_GUIVersion;
         private Label label16;
         private Label label15;
         private Label totalScan;
         private CheckBox CheckBox_AverageCSV;
-        private Label label17;
         private Button button_ExitCont;
         private Timer timer_AutoClickScanButton;
         private GroupBox GroupBox_LogFile;
@@ -4549,6 +4669,24 @@ namespace ISC_Win_WinForm_GUI
         private RadioButton RadioButton_SavedScanSelCsv;
         private TextBox textBox_FanOffTime;
         private CheckBox checkBox_EnableBlackLevelData;
+        private Panel panel1;
+        private Button btn_FileListRefresh;
+        private Label label2;
+        private Panel panel_Tooltips;
+        private RadioButton rb_tooltip4multi;
+        private RadioButton rb_tooltip4single;
+        private CheckBox checkBox_tooltip;
+        private Button Button_SaveNumAvgToConfig;
+        private Button button_disableUACAlert;
+        private Label label_DisableUACAlert;
+        private Label label6;
+        private Label label3;
+        private CheckBox CheckBox_SaveJDX;
+        private Label label7;
+        private CheckBox checkBox_AutoScan;
+        private Label label_ContinuousMode;
+        private Button button_ClearPlots;
+        private Button button_SwitchDevice;
     }
 }
 

@@ -36,7 +36,7 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(27, 57);
+            this.progressBar1.Location = new System.Drawing.Point(27, 59);
             this.progressBar1.MarqueeAnimationSpeed = 30;
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(343, 23);
@@ -45,7 +45,6 @@
             // 
             // button_cancel
             // 
-            this.button_cancel.Font = new System.Drawing.Font("Calibri", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button_cancel.Location = new System.Drawing.Point(156, 93);
             this.button_cancel.Name = "button_cancel";
             this.button_cancel.Size = new System.Drawing.Size(75, 33);
@@ -58,7 +57,6 @@
             // 
             this.tb_content.BackColor = System.Drawing.SystemColors.Control;
             this.tb_content.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.tb_content.Font = new System.Drawing.Font("PMingLiU", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.tb_content.Location = new System.Drawing.Point(27, 12);
             this.tb_content.Multiline = true;
             this.tb_content.Name = "tb_content";
@@ -71,12 +69,13 @@
             // 
             // ProgressBar
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(398, 136);
             this.Controls.Add(this.tb_content);
             this.Controls.Add(this.button_cancel);
             this.Controls.Add(this.progressBar1);
+            this.Font = new System.Drawing.Font("Calibri", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "ProgressBar";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;

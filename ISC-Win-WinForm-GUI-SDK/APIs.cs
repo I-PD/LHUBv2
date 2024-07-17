@@ -26,12 +26,12 @@ namespace ISC_Win_WinForm_GUI
             MessageBox.Show(Text, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
         }
 
-        public static void ShowError(string Text, string Caption = null)
+        public static void ShowError(string Text, string Caption = null, IWin32Window sender = null)
         {
             if (string.IsNullOrEmpty(Caption))
                 Caption = "Error";
 
-            MessageBox.Show(Text, Caption, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+            MessageBox.Show(sender, Text, Caption, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
         }
 
         public static DialogResult ShowQuestion(string Text, string Caption = null, MessageBoxButtons Button = MessageBoxButtons.YesNo)
