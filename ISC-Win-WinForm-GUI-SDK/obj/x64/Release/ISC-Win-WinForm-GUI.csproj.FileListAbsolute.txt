@@ -1,0 +1,3 @@
+C:\Users\jlpereira\source\repos\LHUBv2\ISC_NIRScan_Win_Winform_GUI\ISC-Win-WinForm-GUI-SDK\obj\x64\Release\ISC-Win-WinForm-GUI.csproj.AssemblyReference.cache
+C:\Users\jlpereira\source\repos\LHUBv2\ISC_NIRScan_Win_Winform_GUI\ISC-Win-WinForm-GUI-SDK\obj\x64\Release\ISC-NIRScan-GUI_Content.g.cs
+C:\Users\jlpereira\source\repos\LHUBv2\ISC_NIRScan_Win_Winform_GUI\ISC-Win-WinForm-GUI-SDK\obj\x64\Release\ISC-NIRScan-GUI_MarkupCompile.cache
