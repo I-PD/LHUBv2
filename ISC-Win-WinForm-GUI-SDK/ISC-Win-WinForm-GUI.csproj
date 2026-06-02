@@ -243,11 +243,17 @@
     <PackageReference Include="CsvHelper">
       <Version>33.0.1</Version>
     </PackageReference>
+    <PackageReference Include="LiveCharts">
+      <Version>0.9.7</Version>
+    </PackageReference>
     <PackageReference Include="LiveCharts.Geared">
       <Version>1.2.9</Version>
     </PackageReference>
     <PackageReference Include="LiveCharts.WinForms">
       <Version>0.9.7.1</Version>
+    </PackageReference>
+    <PackageReference Include="LiveCharts.Wpf">
+      <Version>0.9.7</Version>
     </PackageReference>
     <PackageReference Include="log4net">
       <Version>2.0.17</Version>
